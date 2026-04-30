@@ -218,9 +218,23 @@ export default function Home() {
                   <AutoStoriesIcon fontSize="small" />
                   <Typography variant="body2">{totalKhatams} Khatams</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <NightlightIcon fontSize="small" />
-                  <Typography variant="body2">{remainingDebt} Sajdahs Due</Typography>
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    bgcolor: remainingDebt > 5 ? 'rgba(239, 68, 68, 0.2)' : remainingDebt > 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                    px: 1.5,
+                    py: 0.25,
+                    borderRadius: '20px',
+                    border: '1px solid',
+                    borderColor: remainingDebt > 5 ? 'rgba(239, 68, 68, 0.5)' : remainingDebt > 0 ? 'rgba(245, 158, 11, 0.5)' : 'rgba(16, 185, 129, 0.5)'
+                  }}
+                >
+                  <NightlightIcon fontSize="small" sx={{ color: remainingDebt > 5 ? '#fca5a5' : remainingDebt > 0 ? '#fcd34d' : '#6ee7b7' }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {remainingDebt > 0 ? `${remainingDebt} Sajdahs Due` : 'No Sajdahs Due'}
+                  </Typography>
                 </Box>
               </Box>
             </Box>

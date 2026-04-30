@@ -32,12 +32,12 @@ const SAJDAH_LOCATIONS = [
   { para: 14, surah: 'An-Nahl' },
   { para: 15, surah: 'Al-Isra' },
   { para: 16, surah: 'Maryam' },
-  { para: 17, surah: 'Al-Hajj (1)' },
-  { para: 17, surah: 'Al-Hajj (2)' },
+  { para: 17, surah: 'Al-Hajj' },
   { para: 19, surah: 'Al-Furqan' },
   { para: 21, surah: 'An-Naml' },
   { para: 23, surah: 'As-Sajdah' },
   { para: 24, surah: 'Saad' },
+  { para: 25, surah: 'Fussilat' },
   { para: 27, surah: 'An-Najm' },
   { para: 30, surah: 'Al-Inshiqaq' },
   { para: 30, surah: 'Al-Alaq' }
@@ -83,10 +83,14 @@ export default function SajdahPaymentPage() {
       </Typography>
 
       {/* Header Card */}
-      <Card sx={{ bgcolor: 'secondary.main', color: '#fff', borderRadius: '24px' }}>
+      <Card sx={{ bgcolor: remainingDebt > 0 ? 'secondary.main' : 'primary.main', color: '#fff', borderRadius: '24px' }}>
         <CardContent sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="h6" sx={{ opacity: 0.9 }}>Total Pending Sajdahs</Typography>
-          <Typography variant="h2" sx={{ fontWeight: 'bold' }}>{remainingDebt}</Typography>
+          <Typography variant="h6" sx={{ opacity: 0.9 }}>
+            {remainingDebt > 0 ? 'Total Pending Sajdahs' : 'All Sajdahs Completed'}
+          </Typography>
+          <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
+            {remainingDebt > 0 ? remainingDebt : '0'}
+          </Typography>
         </CardContent>
       </Card>
 
