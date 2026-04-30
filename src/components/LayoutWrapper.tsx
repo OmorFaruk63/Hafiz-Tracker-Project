@@ -1,6 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { syncWithServer } from '@/lib/sync';
+
 import { 
   AppBar, 
   Toolbar, 
@@ -45,6 +47,21 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     if (pathname === '/stats') return 2;
     return 0;
   };
+
+  useEffect(() => {
+    syncWithServer();
+
+    const handleOnline = () => {
+      console.log('App is online. Attempting sync...');
+      syncWithServer();
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>
