@@ -5,119 +5,126 @@ import {
   Box, 
   Typography, 
   Paper, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow,
-  useTheme
+  useTheme,
+  Card,
+  CardContent,
+  Grid
 } from '@mui/material';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
+import { db } from '@/lib/hafizDB';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CalendarHeatmap from 'react-calendar-heatmap';
+import 'react-calendar-heatmap/dist/styles.css';
+import { useHafizStore } from '@/store/useHafizStore';
 
 export default function StatsPage() {
   const theme = useTheme();
-  
-  // Read all data sorted by date descending
+  const { totalKhatams, lastPara } = useHafizStore();
   const dailyLogs = useLiveQuery(() => db.dailyLogs.orderBy('date').reverse().toArray());
 
-  // Generate data for the last 7 days
-  const chartData = React.useMemo(() => {
+  // Heatmap Data (Pages Read = Paras * 20 + Pages)
+  const heatmapData = React.useMemo(() => {
     if (!dailyLogs) return [];
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-      
-      const logForDay = dailyLogs.find(log => log.date === dateStr);
-      data.push({
-        name: dayName,
-        date: dateStr,
-        paras: logForDay ? logForDay.parasRead : 0
-      });
-    }
-    return data;
+    return dailyLogs.map(log => ({
+      date: log.date,
+      count: (log.endPara * 20) + log.endPage,
+    }));
   }, [dailyLogs]);
 
+  // Consistency Score (Daily Streak)
+  const streak = React.useMemo(() => {
+    if (!dailyLogs || dailyLogs.length === 0) return 0;
+    const sorted = [...dailyLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    let currentStreak = 0;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    let expectedDate = new Date(today);
+    
+    for (const log of sorted) {
+      const logDate = new Date(log.date);
+      logDate.setHours(0,0,0,0);
+      
+      const diffTime = Math.abs(expectedDate.getTime() - logDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0 || diffDays === 1) {
+        currentStreak++;
+        expectedDate = new Date(logDate);
+        expectedDate.setDate(expectedDate.getDate() - 1);
+      } else {
+        break; // Streak broken
+      }
+    }
+    return currentStreak;
+  }, [dailyLogs]);
+
+  // Khatam Progress for current month
+  const khatamProgress = Math.min(100, Math.round((lastPara / 30) * 100));
+  const progressData = [{ name: 'Current Khatam', progress: khatamProgress }];
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, pb: 4 }}>
-      <Typography variant="h5" component="h1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-        Statistics & History
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 4, pt: 2 }}>
+      <Typography variant="h4" component="h1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+        Hifz Strength
       </Typography>
 
-      {/* Weekly Progress Chart */}
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
+          <Card sx={{ bgcolor: 'primary.main', color: '#fff', height: '100%', borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>Daily Streak</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 'bold', mt: 1 }}>{streak} <span style={{fontSize: '1rem', fontWeight: 'normal'}}>days</span></Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={6}>
+          <Card sx={{ bgcolor: 'secondary.main', color: '#fff', height: '100%', borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Khatams</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 'bold', mt: 1 }}>{totalKhatams}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Heatmap */}
       <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Weekly Progress (Paras)
+          Contribution Calendar
         </Typography>
-        <Box sx={{ width: '100%', height: 300, mt: 2 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip 
-                cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              />
-              <Bar dataKey="paras" name="Paras Read" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <Box sx={{ width: '100%', mt: 2, overflowX: 'auto', pb: 1 }}>
+          <Box sx={{ minWidth: 600 }}>
+            <CalendarHeatmap
+              startDate={new Date(new Date().setMonth(new Date().getMonth() - 6))}
+              endDate={new Date()}
+              values={heatmapData}
+              classForValue={(value) => {
+                if (!value) return 'color-empty';
+                return `color-github-${value.count > 0 ? (value.count > 300 ? 4 : value.count > 150 ? 3 : value.count > 50 ? 2 : 1) : 0}`;
+              }}
+            />
+          </Box>
         </Box>
       </Paper>
 
-      {/* Full History Table */}
-      <Paper elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ p: 2, borderBottom: '1px solid #eee' }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Full History
-          </Typography>
+      {/* Khatam Progress */}
+      <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+          Khatam Progress
+        </Typography>
+        <Box sx={{ width: '100%', height: 120, mt: 2 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={progressData} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" domain={[0, 100]} hide />
+              <YAxis dataKey="name" type="category" hide />
+              <Tooltip cursor={{fill: 'transparent'}} />
+              <Bar dataKey="progress" fill={theme.palette.secondary.main} radius={[4, 4, 4, 4]} label={{ position: 'right', formatter: (val: number) => `${val}%`, fill: theme.palette.text.primary, fontWeight: 'bold' }} />
+            </BarChart>
+          </ResponsiveContainer>
         </Box>
-        <TableContainer>
-          <Table size="small">
-            <TableHead sx={{ backgroundColor: '#f9f9f9' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Paras</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Pages</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>Sajdahs</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Sync</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {dailyLogs?.map((row) => (
-                <TableRow key={row.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                  <TableCell component="th" scope="row">
-                    {row.date}
-                  </TableCell>
-                  <TableCell align="right">{row.parasRead}</TableCell>
-                  <TableCell align="right">{row.pagesRead}</TableCell>
-                  <TableCell align="right">{row.sajdahsDone}</TableCell>
-                  <TableCell align="center">
-                    {row.isSynced ? (
-                      <CloudDoneIcon color="primary" fontSize="small" titleAccess="Synced to cloud" />
-                    ) : (
-                      <CloudOffIcon color="disabled" fontSize="small" titleAccess="Not synced yet" />
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!dailyLogs?.length && (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                    No logs found. Start reading to see your history here.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
       </Paper>
     </Box>
   );

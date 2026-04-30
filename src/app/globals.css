@@ -13,3 +13,10 @@ a {
 * {
   box-sizing: border-box;
 }
+
+/* React Calendar Heatmap custom colors */
+.react-calendar-heatmap .color-empty { fill: rgba(6, 95, 70, 0.05); }
+.react-calendar-heatmap .color-github-1 { fill: rgba(6, 95, 70, 0.3); }
+.react-calendar-heatmap .color-github-2 { fill: rgba(6, 95, 70, 0.5); }
+.react-calendar-heatmap .color-github-3 { fill: rgba(6, 95, 70, 0.7); }
+.react-calendar-heatmap .color-github-4 { fill: rgba(6, 95, 70, 1); }
