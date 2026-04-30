@@ -141,9 +141,13 @@ export default function SajdahPaymentPage() {
                   <ListItemText 
                     primary={`Para ${loc.para} - ${loc.surah}`} 
                     secondary={isPassed ? 'Passed (Pending Payment)' : 'Not yet reached'}
-                    primaryTypographyProps={{ 
-                      fontWeight: isPassed ? 'bold' : 'normal',
-                      color: isPassed ? 'text.primary' : 'text.secondary'
+                    slotProps={{
+                      primary: { 
+                        sx: {
+                          fontWeight: isPassed ? 'bold' : 'normal',
+                          color: isPassed ? 'text.primary' : 'text.secondary'
+                        }
+                      }
                     }}
                   />
                   {isPassed && <Typography variant="caption" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>PENDING</Typography>}

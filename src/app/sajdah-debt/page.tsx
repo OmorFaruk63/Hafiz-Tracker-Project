@@ -130,7 +130,7 @@ export default function SajdahLedgerPage() {
             type="number"
             value={sajdahInput}
             onChange={(e) => setSajdahInput(e.target.value === '' ? '' : Number(e.target.value))}
-            inputProps={{ min: 1 }}
+            slotProps={{ htmlInput: { min: 1 } }}
             fullWidth
             placeholder="e.g. 1"
           />
@@ -167,7 +167,7 @@ export default function SajdahLedgerPage() {
                     <ListItemText 
                       primary={`${log.sajdahsDone} Sajdah${log.sajdahsDone > 1 ? 's' : ''}`}
                       secondary={`Date: ${log.date}`}
-                      primaryTypographyProps={{ fontWeight: 'bold' }}
+                      slotProps={{ primary: { sx: { fontWeight: 'bold' } } }}
                     />
                   </ListItem>
                 </React.Fragment>

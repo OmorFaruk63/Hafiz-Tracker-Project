@@ -113,7 +113,7 @@ export default function AdvancedStatsPage() {
 
       {/* Summary Tiles */}
       <Grid container spacing={2}>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Card sx={{ bgcolor: 'primary.main', color: '#fff', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
             <CardContent>
               <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>AVG PARAS / DAY</Typography>
@@ -122,7 +122,7 @@ export default function AdvancedStatsPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Card sx={{ bgcolor: 'info.main', color: '#fff', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
             <CardContent>
               <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
@@ -131,7 +131,7 @@ export default function AdvancedStatsPage() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card sx={{ bgcolor: 'secondary.main', color: '#fff', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
               <AutoStoriesIcon fontSize="large" />
@@ -153,12 +153,12 @@ export default function AdvancedStatsPage() {
         <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
           <TimelineIcon /> Reading Consistency
         </Typography>
-        <Grid container spacing={1} justifyContent="center">
+        <Grid container spacing={1} sx={{ justifyContent: 'center' }}>
           {monthDays.map((day, i) => {
             const log = getLogForDay(day);
             const progress = log ? (log.endPara / 30) * 100 : 0;
             return (
-              <Grid item xs={1.7} key={i}>
+              <Grid size={1.7} key={i}>
                 <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: 45 }}>
                   <CircularProgress
                     variant="determinate"

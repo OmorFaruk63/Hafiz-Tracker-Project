@@ -57,6 +57,7 @@ export default function Home() {
   const [paraInput, setParaInput] = useState<number>(1);
   const [pageInput, setPageInput] = useState<number>(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [khatamToastOpen, setKhatamToastOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
@@ -85,6 +86,24 @@ export default function Home() {
   }, [lastPara, lastPage, userEmail, mounted]);
 
   const handleParaClick = (p: number) => {
+    if (p === 30) {
+      // Trigger immediate Khatam reset when clicking 30 as requested
+      import('canvas-confetti').then((confetti) => {
+        confetti.default({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#2D6A4F', '#D4AF37', '#48CAE4']
+        });
+      });
+      
+      startNewKhatam();
+      setParaInput(1);
+      setPageInput(0);
+      setKhatamToastOpen(true);
+      return;
+    }
+
     setParaInput(p);
     if (p === lastPara) {
       setPageInput(lastPage);
@@ -98,7 +117,27 @@ export default function Home() {
       const validData = LogSchema.parse({ para: paraInput, page: pageInput });
       setErrorMsg(null);
 
-      setLastReadPosition(validData.para, validData.page);
+      const isKhatam = validData.para === 30 && validData.page === 20;
+
+      if (isKhatam) {
+        // Celebration logic
+        import('canvas-confetti').then((confetti) => {
+          confetti.default({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#2D6A4F', '#D4AF37', '#48CAE4']
+          });
+        });
+        
+        startNewKhatam();
+        setParaInput(1);
+        setPageInput(0);
+        setKhatamToastOpen(true);
+      } else {
+        setLastReadPosition(validData.para, validData.page);
+        setSnackbarOpen(true);
+      }
 
       const today = new Date().toISOString().split('T')[0];
       await db.dailyLogs.add({
@@ -108,7 +147,6 @@ export default function Home() {
         sajdahsDone: 0,
         isSynced: false
       });
-      setSnackbarOpen(true);
     } catch (error) {
       if (error instanceof z.ZodError) {
         setErrorMsg('Invalid input: Para must be 1-30 and Page 0-20.');
@@ -158,7 +196,7 @@ export default function Home() {
 
       {/* Progress Overview */}
       <Grid container spacing={2}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Paper 
             elevation={0}
             sx={{ 
@@ -218,7 +256,7 @@ export default function Home() {
           </Typography>
           <Grid container spacing={1}>
             {Array.from({ length: 30 }, (_, i) => i + 1).map((p) => (
-              <Grid item xs={2.4} sm={2} md={1.2} key={p}>
+              <Grid size={{ xs: 2.4, sm: 2, md: 1.2 }} key={p}>
                 <Button
                   variant={paraInput === p ? "contained" : "outlined"}
                   color={paraInput === p ? "primary" : "inherit"}
@@ -322,6 +360,29 @@ export default function Home() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar 
+        open={khatamToastOpen} 
+        autoHideDuration={6000} 
+        onClose={() => setKhatamToastOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          severity="success" 
+          variant="filled" 
+          sx={{ 
+            width: '100%', 
+            borderRadius: '16px', 
+            bgcolor: 'secondary.main',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '1.1rem',
+            boxShadow: '0 8px 32px rgba(212, 175, 55, 0.4)'
+          }}
+        >
+          🎉 Mabrook! Khatam Completed successfully!
+        </Alert>
+      </Snackbar>
 
       <Snackbar 
         open={snackbarOpen} 
