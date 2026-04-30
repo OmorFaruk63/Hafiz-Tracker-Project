@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface HafizState {
+  userEmail: string;
   totalKhatams: number;
   lastPara: number;
   lastPage: number;
   totalSajdahsDone: number;
   
   // Actions
+  setUserEmail: (email: string) => void;
   setTotalKhatams: (khatams: number) => void;
   setLastReadPosition: (para: number, page: number) => void;
   setTotalSajdahsDone: (sajdahs: number) => void;
@@ -19,11 +21,13 @@ interface HafizState {
 export const useHafizStore = create<HafizState>()(
   persist(
     (set) => ({
+      userEmail: '',
       totalKhatams: 0,
       lastPara: 1,
       lastPage: 0,
       totalSajdahsDone: 0,
 
+      setUserEmail: (email) => set({ userEmail: email }),
       setTotalKhatams: (khatams) => set({ totalKhatams: khatams }),
       setLastReadPosition: (para, page) => set({ lastPara: para, lastPage: page }),
       setTotalSajdahsDone: (sajdahs) => set({ totalSajdahsDone: sajdahs }),
@@ -33,11 +37,10 @@ export const useHafizStore = create<HafizState>()(
         totalKhatams: state.totalKhatams + 1,
         lastPara: 1,
         lastPage: 0
-        // totalSajdahsDone persists automatically
       })),
     }),
     {
-      name: 'hafiz-storage', // Saves to localStorage automatically
+      name: 'hafiz-storage',
     }
   )
 );

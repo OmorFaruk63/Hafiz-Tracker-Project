@@ -1,9 +1,12 @@
 import { useCallback, useEffect } from 'react';
 import { db } from '@/lib/hafizDB';
+import { useHafizStore } from '@/store/useHafizStore';
 
 export function useSyncManager() {
+  const { userEmail } = useHafizStore();
+
   const syncNow = useCallback(async () => {
-    if (typeof window === 'undefined' || !navigator.onLine) return;
+    if (typeof window === 'undefined' || !navigator.onLine || !userEmail) return;
 
     try {
       const logsToSync = await db.dailyLogs.filter(log => !log.isSynced).toArray();
@@ -13,7 +16,10 @@ export function useSyncManager() {
       const response = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(logsToSync),
+        body: JSON.stringify({
+          email: userEmail,
+          logs: logsToSync
+        }),
       });
 
       if (response.ok) {
@@ -25,12 +31,12 @@ export function useSyncManager() {
           }
         });
         
-        console.log(`Successfully synced ${idsToUpdate.length} logs to cloud.`);
+        console.log(`Successfully synced ${idsToUpdate.length} logs for ${userEmail}.`);
       }
     } catch (error) {
       console.error('Sync failed:', error);
     }
-  }, []);
+  }, [userEmail]);
 
   useEffect(() => {
     syncNow();
@@ -39,7 +45,7 @@ export function useSyncManager() {
     return () => {
       window.removeEventListener('online', syncNow);
     };
-  }, [syncNow]);
+  }, [syncNow, userEmail]);
 
   return { syncNow };
 }

@@ -11,7 +11,8 @@ import {
   ToggleButton, 
   ToggleButtonGroup,
   CircularProgress,
-  useTheme
+  useTheme,
+  IconButton
 } from '@mui/material';
 import { 
   BarChart, 
@@ -22,18 +23,24 @@ import {
   ResponsiveContainer, 
   LineChart, 
   Line, 
-  CartesianGrid 
+  CartesianGrid,
+  AreaChart,
+  Area
 } from 'recharts';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/hafizDB';
 import { useHafizStore } from '@/store/useHafizStore';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, subMonths } from 'date-fns';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import StarsIcon from '@mui/icons-material/Stars';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 
 export default function AdvancedStatsPage() {
   const theme = useTheme();
-  const [timeFilter, setTimeFilter] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [timeFilter, setTimeFilter] = useState<'weekly' | 'monthly'>('weekly');
   const dailyLogs = useLiveQuery(() => db.dailyLogs.toArray());
-  const { totalSajdahsDone } = useHafizStore();
+  const { totalKhatams, totalSajdahsDone, lastPara } = useHafizStore();
 
   // Calendar Logic (Current Month)
   const monthDays = useMemo(() => {
@@ -50,9 +57,9 @@ export default function AdvancedStatsPage() {
 
   // Summary Logic
   const statsSummary = useMemo(() => {
-    if (!dailyLogs || dailyLogs.length === 0) return { avg: 0, streak: 0, sajdahs: 0 };
+    if (!dailyLogs || dailyLogs.length === 0) return { avg: 0, streak: 0, sajdahs: 0, totalPages: 0 };
     
-    // Average Paras/Day (last 30 days)
+    // Average Paras/Day
     const totalParas = dailyLogs.reduce((acc, log) => acc + (log.endPara || 0), 0);
     const avg = (totalParas / dailyLogs.length).toFixed(1);
 
@@ -62,7 +69,10 @@ export default function AdvancedStatsPage() {
       .filter(log => log.date.startsWith(thisMonth))
       .reduce((acc, log) => acc + (log.sajdahsDone || 0), 0);
 
-    return { avg, streak: 0, sajdahs }; // Streak logic omitted for brevity but can be calculated
+    // Total Pages (approx)
+    const totalPages = dailyLogs.reduce((acc, log) => acc + (log.endPage || 0), 0);
+
+    return { avg, streak: 0, sajdahs, totalPages }; 
   }, [dailyLogs]);
 
   // Chart Data
@@ -80,7 +90,6 @@ export default function AdvancedStatsPage() {
         };
       });
     } else {
-      // Monthly Cumulative
       const start = startOfMonth(new Date());
       const end = endOfMonth(new Date());
       const days = eachDayOfInterval({ start, end });
@@ -97,69 +106,89 @@ export default function AdvancedStatsPage() {
   }, [dailyLogs, timeFilter]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', textAlign: 'center', mt: 2 }}>
-        Advanced Analytics
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10, pt: 2 }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', fontFamily: 'var(--font-amiri)' }}>
+        Strength Analysis
       </Typography>
 
       {/* Summary Tiles */}
       <Grid container spacing={2}>
-        <Grid item xs={4}>
-          <Card sx={{ bgcolor: 'primary.main', color: '#fff', textAlign: 'center' }}>
-            <CardContent sx={{ p: 1 }}>
-              <Typography variant="caption">Avg Paras/Day</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{statsSummary.avg}</Typography>
+        <Grid item xs={6}>
+          <Card sx={{ bgcolor: 'primary.main', color: '#fff', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+            <CardContent>
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>AVG PARAS / DAY</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.avg}</Typography>
+              <TrendingUpIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={4}>
-          <Card sx={{ bgcolor: 'secondary.main', color: '#fff', textAlign: 'center' }}>
-            <CardContent sx={{ p: 1 }}>
-              <Typography variant="caption">Monthly Sajdahs</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{statsSummary.sajdahs}</Typography>
+        <Grid item xs={6}>
+          <Card sx={{ bgcolor: 'info.main', color: '#fff', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+            <CardContent>
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.sajdahs}</Typography>
+              <StarsIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={4}>
-          <Card sx={{ bgcolor: 'primary.dark', color: '#fff', textAlign: 'center' }}>
-            <CardContent sx={{ p: 1 }}>
-              <Typography variant="caption">Streak</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{statsSummary.streak}</Typography>
-            </CardContent>
+        <Grid item xs={12}>
+          <Card sx={{ bgcolor: 'secondary.main', color: '#fff', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
+              <AutoStoriesIcon fontSize="large" />
+              <Box>
+                <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>TOTAL KHATAMS</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 800 }}>{totalKhatams}</Typography>
+              </Box>
+            </Box>
+            <Box sx={{ p: 2, textAlign: 'right' }}>
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>CURRENT PARA</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 800 }}>{lastPara}</Typography>
+            </Box>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Small Calendar with Progress Rings */}
-      <Paper sx={{ p: 2, borderRadius: '24px', border: '1px solid rgba(217, 119, 6, 0.2)' }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'primary.main' }}>
-          Monthly Progress
+      {/* Monthly Progress Calendar */}
+      <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <TimelineIcon /> Reading Consistency
         </Typography>
-        <Grid container spacing={1}>
+        <Grid container spacing={1} justifyContent="center">
           {monthDays.map((day, i) => {
             const log = getLogForDay(day);
             const progress = log ? (log.endPara / 30) * 100 : 0;
             return (
               <Grid item xs={1.7} key={i}>
-                <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: 40 }}>
+                <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: 45 }}>
                   <CircularProgress
                     variant="determinate"
                     value={100}
-                    size={36}
-                    thickness={4}
+                    size={40}
+                    thickness={3}
                     sx={{ color: 'rgba(0,0,0,0.05)', position: 'absolute' }}
                   />
                   <CircularProgress
                     variant="determinate"
                     value={progress}
-                    size={36}
-                    thickness={4}
-                    color="secondary"
-                    sx={{ position: 'absolute' }}
+                    size={40}
+                    thickness={3}
+                    sx={{ 
+                      position: 'absolute',
+                      color: progress > 0 ? 'primary.main' : 'transparent'
+                    }}
                   />
-                  <Typography variant="caption" sx={{ fontWeight: isSameDay(day, new Date()) ? 'bold' : 'normal' }}>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      fontWeight: isSameDay(day, new Date()) ? 800 : 500,
+                      color: isSameDay(day, new Date()) ? 'primary.main' : 'text.secondary'
+                    }}
+                  >
                     {format(day, 'd')}
                   </Typography>
+                  {progress > 0 && (
+                    <Box sx={{ position: 'absolute', bottom: 0, width: 4, height: 4, borderRadius: '50%', bgcolor: 'secondary.main' }} />
+                  )}
                 </Box>
               </Grid>
             );
@@ -167,35 +196,59 @@ export default function AdvancedStatsPage() {
         </Grid>
       </Paper>
 
-      {/* Filtered Charts */}
-      <Paper sx={{ p: 2, borderRadius: '24px' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Charts</Typography>
+      {/* Interactive Activity Chart */}
+      <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Activity Trends</Typography>
           <ToggleButtonGroup
             value={timeFilter}
             exclusive
             onChange={(e, val) => val && setTimeFilter(val)}
             size="small"
-            color="secondary"
+            color="primary"
+            sx={{ 
+              '& .MuiToggleButton-root': { 
+                borderRadius: '8px', 
+                px: 2,
+                border: 'none',
+                bgcolor: 'rgba(45, 106, 79, 0.05)',
+                '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff' }
+              } 
+            }}
           >
             <ToggleButton value="weekly">Weekly</ToggleButton>
             <ToggleButton value="monthly">Monthly</ToggleButton>
           </ToggleButtonGroup>
         </Box>
-        <Box sx={{ height: 250 }}>
+        <Box sx={{ height: 300, width: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
             {timeFilter === 'weekly' ? (
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'rgba(217, 119, 6, 0.1)' }} />
-                <Bar dataKey="paras" fill={theme.palette.secondary.main} radius={[4, 4, 0, 0]} />
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(45, 106, 79, 0.05)' }} 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                />
+                <Bar dataKey="paras" fill={theme.palette.primary.main} radius={[6, 6, 0, 0]} barSize={30} />
               </BarChart>
             ) : (
-              <LineChart data={chartData}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="paras" stroke={theme.palette.secondary.main} strokeWidth={3} dot={false} />
-              </LineChart>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorParas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 10 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                />
+                <Area type="monotone" dataKey="paras" stroke={theme.palette.secondary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorParas)" />
+              </AreaChart>
             )}
           </ResponsiveContainer>
         </Box>
