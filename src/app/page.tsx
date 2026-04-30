@@ -17,6 +17,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import SaveIcon from '@mui/icons-material/Save';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import { useSajdahDebt } from '@/hooks/useSajdahDebt';
 
 export default function Home() {
   const userState = useLiveQuery(() => db.userState.get(1));
@@ -25,6 +26,7 @@ export default function Home() {
   const [pagesRead, setPagesRead] = useState<number | ''>('');
   const [sajdahsDone, setSajdahsDone] = useState<number | ''>('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const { remainingDebt, loading: sajdahLoading } = useSajdahDebt();
 
   // Initialize userState if it doesn't exist
   useEffect(() => {
@@ -106,6 +108,18 @@ export default function Home() {
       <Typography variant="h5" component="h1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
         Assalamu Alaikum
       </Typography>
+      
+      {!sajdahLoading && (
+        <Alert 
+          severity={remainingDebt > 0 ? "error" : "success"}
+          variant="filled"
+          sx={{ borderRadius: 2, fontWeight: 'bold', mb: 1 }}
+        >
+          {remainingDebt > 0 
+            ? `You have ${remainingDebt} pending Sajdah(s) to perform.` 
+            : "No pending Sajdahs. Alhamdulillah!"}
+        </Alert>
+      )}
       
       {/* Last Read Position Card */}
       <Card elevation={2} sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)' }}>
