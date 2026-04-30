@@ -13,6 +13,7 @@ interface HafizState {
   setTotalSajdahsDone: (sajdahs: number) => void;
   incrementSajdahs: (amount: number) => void;
   addKhatam: () => void;
+  startNewKhatam: () => void;
 }
 
 export const useHafizStore = create<HafizState>()(
@@ -28,6 +29,12 @@ export const useHafizStore = create<HafizState>()(
       setTotalSajdahsDone: (sajdahs) => set({ totalSajdahsDone: sajdahs }),
       incrementSajdahs: (amount) => set((state) => ({ totalSajdahsDone: state.totalSajdahsDone + amount })),
       addKhatam: () => set((state) => ({ totalKhatams: state.totalKhatams + 1 })),
+      startNewKhatam: () => set((state) => ({ 
+        totalKhatams: state.totalKhatams + 1,
+        lastPara: 1,
+        lastPage: 0
+        // totalSajdahsDone persists automatically
+      })),
     }),
     {
       name: 'hafiz-storage', // Saves to localStorage automatically

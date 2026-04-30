@@ -24,7 +24,6 @@ import SaveIcon from '@mui/icons-material/Save';
 import { motion } from 'framer-motion';
 import { z } from 'zod';
 
-const SAJDAH_PARAS = [9, 13, 14, 15, 16, 17, 19, 21, 23, 24, 27, 30, 30];
 
 // Zod Schema for validation
 const LogSchema = z.object({

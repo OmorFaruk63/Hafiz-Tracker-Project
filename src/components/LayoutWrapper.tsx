@@ -21,7 +21,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   
   const getValue = () => {
     if (pathname === '/') return 0;
-    if (pathname === '/sajdah-debt') return 1;
+    if (pathname === '/sajdah') return 1;
     if (pathname === '/stats') return 2;
     return 0;
   };
@@ -49,7 +49,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             value={getValue()}
             onChange={(event, newValue) => {
               if (newValue === 0) router.push('/');
-              if (newValue === 1) router.push('/sajdah-debt');
+              if (newValue === 1) router.push('/sajdah');
               if (newValue === 2) router.push('/stats');
             }}
           >
