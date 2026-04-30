@@ -1,41 +1,19 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { syncWithServer } from '@/lib/sync';
-
-import { 
+import { useSyncManager } from '@/hooks/useSyncManager';
+import {
   AppBar, 
   Toolbar, 
   Typography, 
   BottomNavigation, 
   BottomNavigationAction, 
   Paper,
-  Box,
-  CssBaseline,
-  ThemeProvider,
-  createTheme
+  Box
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { useRouter, usePathname } from 'next/navigation';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2e7d32', // Green theme for Islamic app
-    },
-    secondary: {
-      main: '#f57f17',
-    },
-    background: {
-      default: '#f5f5f5',
-    }
-  },
-  typography: {
-    fontFamily: 'inherit', // To use Next.js font
-  }
-});
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -48,24 +26,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return 0;
   };
 
-  useEffect(() => {
-    syncWithServer();
-
-    const handleOnline = () => {
-      console.log('App is online. Attempting sync...');
-      syncWithServer();
-    };
-
-    window.addEventListener('online', handleOnline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-    };
-  }, []);
+  useSyncManager();
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <>
       <Box sx={{ pb: 7, height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <AppBar position="static">
           <Toolbar>
@@ -95,6 +59,6 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           </BottomNavigation>
         </Paper>
       </Box>
-    </ThemeProvider>
+    </>
   );
 }

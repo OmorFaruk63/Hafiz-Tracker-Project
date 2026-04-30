@@ -1,232 +1,149 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Typography, 
-  Box, 
-  Card, 
-  CardContent, 
-  TextField, 
-  Button, 
-  Snackbar, 
-  Alert,
-  Divider,
-  Paper
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  Snackbar,
+  Alert
 } from '@mui/material';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
-import SaveIcon from '@mui/icons-material/Save';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import { useHafizStore } from '@/store/useHafizStore';
 import { useSajdahDebt } from '@/hooks/useSajdahDebt';
+import { useThemeContext } from '@/components/AppThemeProvider';
+import { db } from '@/lib/hafizDB';
+import SaveIcon from '@mui/icons-material/Save';
 
 export default function Home() {
-  const userState = useLiveQuery(() => db.userState.get(1));
-  
-  const [parasRead, setParasRead] = useState<number | ''>('');
-  const [pagesRead, setPagesRead] = useState<number | ''>('');
-  const [sajdahsDone, setSajdahsDone] = useState<number | ''>('');
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const { remainingDebt, loading: sajdahLoading } = useSajdahDebt();
+  const { mode, toggleTheme } = useThemeContext();
+  const { lastPara, lastPage, setLastReadPosition } = useHafizStore();
+  const { remainingDebt } = useSajdahDebt();
 
-  // Initialize userState if it doesn't exist
+  // Local state for the form inputs
+  const [paraInput, setParaInput] = useState<number | ''>('');
+  const [pageInput, setPageInput] = useState<number | ''>('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Sync state from Zustand to local input on mount and when they change externally
   useEffect(() => {
-    const initDb = async () => {
-      const state = await db.userState.get(1);
-      if (!state) {
-        await db.userState.add({
-          id: 1,
-          totalKhatams: 0,
-          lastPara: 0,
-          lastPage: 0
-        });
-      }
-    };
-    initDb();
-  }, []);
+    setMounted(true);
+    setParaInput(lastPara);
+    setPageInput(lastPage);
+  }, [lastPara, lastPage]);
 
   const handleSave = async () => {
+    const endPara = Number(paraInput) || 1;
+    const endPage = Number(pageInput) || 0;
+
+    // Update Zustand Store
+    setLastReadPosition(endPara, endPage);
+
+    // Save to Dexie dailyLogs
+    const today = new Date().toISOString().split('T')[0];
+    
     try {
-      const pRead = Number(parasRead) || 0;
-      const pgRead = Number(pagesRead) || 0;
-      const sDone = Number(sajdahsDone) || 0;
-
-      if (pRead === 0 && pgRead === 0 && sDone === 0) {
-        return; // Nothing to save
-      }
-
-      // Add to daily logs
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       await db.dailyLogs.add({
         date: today,
-        parasRead: pRead,
-        pagesRead: pgRead,
-        sajdahsDone: sDone,
+        endPara,
+        endPage,
+        sajdahsDone: 0,
         isSynced: false
       });
-
-      // Update user state
-      if (userState) {
-        let newPage = userState.lastPage + pgRead;
-        let newPara = userState.lastPara + pRead;
-        let newKhatams = userState.totalKhatams;
-
-        // Assuming roughly 20 pages per Para for estimation
-        if (newPage > 20) {
-          newPara += Math.floor(newPage / 20);
-          newPage = newPage % 20;
-        }
-
-        if (newPara > 30) {
-          newKhatams += Math.floor(newPara / 30);
-          newPara = newPara % 30;
-          if (newPara === 0 && newPage > 0) {
-             // Edge case handling if they pass para 30
-          }
-        }
-
-        await db.userState.put({
-          id: 1,
-          totalKhatams: newKhatams,
-          lastPara: newPara,
-          lastPage: newPage
-        });
-      }
-
-      // Reset form and show success
-      setParasRead('');
-      setPagesRead('');
-      setSajdahsDone('');
       setSnackbarOpen(true);
-
     } catch (error) {
-      console.error("Failed to save session:", error);
+      console.error('Failed to log session', error);
     }
   };
 
+  if (!mounted) return null; // Avoid hydration mismatch on client render
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
-      <Typography variant="h5" component="h1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-        Assalamu Alaikum
-      </Typography>
-      
-      {!sajdahLoading && (
-        <Alert 
-          severity={remainingDebt > 0 ? "error" : "success"}
-          variant="filled"
-          sx={{ borderRadius: 2, fontWeight: 'bold', mb: 1 }}
-        >
-          {remainingDebt > 0 
-            ? `You have ${remainingDebt} pending Sajdah(s) to perform.` 
-            : "No pending Sajdahs. Alhamdulillah!"}
-        </Alert>
-      )}
-      
-      {/* Last Read Position Card */}
-      <Card elevation={2} sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)' }}>
-        <CardContent sx={{ position: 'relative' }}>
-          <BookmarkBorderIcon sx={{ position: 'absolute', top: 16, right: 16, color: 'primary.main', opacity: 0.5, fontSize: 40 }} />
-          <Typography variant="subtitle1" color="primary.dark" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Last Read Position
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          Assalamu Alaikum
+        </Typography>
+        <IconButton onClick={toggleTheme} color="inherit">
+          {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+        </IconButton>
+      </Box>
+
+      {/* Debt Card */}
+      <Card 
+        sx={{ 
+          bgcolor: remainingDebt > 0 ? 'warning.light' : 'success.light',
+          color: remainingDebt > 0 ? 'warning.contrastText' : 'success.contrastText'
+        }}
+      >
+        <CardContent>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'inherit' }}>
+            Sajdah Debt
           </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Box>
-              <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold' }}>
-                {userState?.lastPara || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Para
-              </Typography>
-            </Box>
-            <Divider orientation="vertical" flexItem />
-            <Box>
-              <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold' }}>
-                {userState?.lastPage || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Page
-              </Typography>
-            </Box>
-            <Divider orientation="vertical" flexItem />
-            <Box>
-              <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold' }}>
-                {userState?.totalKhatams || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Khatams
-              </Typography>
-            </Box>
-          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 'bold', mt: 1, color: 'inherit' }}>
+            {remainingDebt}
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: 'inherit' }}>
+            {remainingDebt > 0 ? "You have pending Sajdahs to perform." : "Alhamdulillah, no pending Sajdahs!"}
+          </Typography>
         </CardContent>
       </Card>
 
-      {/* Quick Log Form */}
-      <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Quick Log
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-          Record your progress for today.
-        </Typography>
+      {/* Where did you stop? Form */}
+      <Card>
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            Where did you stop?
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              label="Current Para"
+              type="number"
+              value={paraInput}
+              onChange={(e) => setParaInput(e.target.value === '' ? '' : Number(e.target.value))}
+              inputProps={{ min: 1, max: 30 }}
+              fullWidth
+            />
+            <TextField
+              label="Current Page"
+              type="number"
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value === '' ? '' : Number(e.target.value))}
+              inputProps={{ min: 0, max: 20 }}
+              fullWidth
+            />
+          </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <TextField
-            label="Paras Read Today"
-            type="number"
-            variant="outlined"
-            fullWidth
-            value={parasRead}
-            onChange={(e) => setParasRead(e.target.value === '' ? '' : Number(e.target.value))}
-            inputProps={{ min: 0, step: 0.5 }}
-          />
-
-          <TextField
-            label="Pages Read Today"
-            type="number"
-            variant="outlined"
-            fullWidth
-            value={pagesRead}
-            onChange={(e) => setPagesRead(e.target.value === '' ? '' : Number(e.target.value))}
-            inputProps={{ min: 0 }}
-          />
-
-          <TextField
-            label="Sajdahs Performed Today"
-            type="number"
-            variant="outlined"
-            fullWidth
-            value={sajdahsDone}
-            onChange={(e) => setSajdahsDone(e.target.value === '' ? '' : Number(e.target.value))}
-            inputProps={{ min: 0 }}
-          />
-
-          <Button
-            variant="contained"
-            color="primary"
+          <Button 
+            variant="contained" 
+            color="primary" 
             size="large"
             startIcon={<SaveIcon />}
             onClick={handleSave}
-            sx={{ mt: 1, py: 1.5, borderRadius: 2, fontWeight: 'bold', fontSize: '1.1rem' }}
+            sx={{ mt: 1, fontWeight: 'bold' }}
           >
             Save Session
           </Button>
-        </Box>
-      </Paper>
+        </CardContent>
+      </Card>
 
-      {/* Success Snackbar */}
       <Snackbar 
         open={snackbarOpen} 
-        autoHideDuration={4000} 
+        autoHideDuration={3000} 
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ bottom: { xs: 90, sm: 24 } }} // Adjust for BottomNavigation on mobile
+        sx={{ bottom: { xs: 90, sm: 24 } }}
       >
-        <Alert 
-          onClose={() => setSnackbarOpen(false)} 
-          severity="success" 
-          variant="filled"
-          sx={{ width: '100%', borderRadius: 2 }}
-        >
-          Session saved successfully!
+        <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
+          Progress saved successfully!
         </Alert>
       </Snackbar>
     </Box>
