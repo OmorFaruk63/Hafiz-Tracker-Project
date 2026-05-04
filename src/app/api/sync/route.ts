@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import { DailyLogModel } from '@/models/DailyLog';
 
+// SYNC DATA TO CLOUD
 export async function POST(req: Request) {
   try {
     const { email, logs } = await req.json();
@@ -24,15 +25,35 @@ export async function POST(req: Request) {
       sajdahsDone: log.sajdahsDone,
     }));
 
-    // Use bulkWrite or insertMany with ordered: false to skip duplicates if any
+    // Use bulkWrite/insertMany with ordered: false to skip duplicates
     await DailyLogModel.insertMany(logsToInsert, { ordered: false }).catch(err => {
-      // Ignore duplicate key errors if we add unique constraints later
-      console.log('Some logs might have already been synced');
+      console.log('Handled duplicate logs during sync');
     });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('Sync API Error:', error);
+    console.error('Sync POST Error:', error);
     return NextResponse.json({ error: 'Failed to sync logs' }, { status: 500 });
+  }
+}
+
+// RESTORE DATA FROM CLOUD
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get('email');
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    
+    const logs = await DailyLogModel.find({ userEmail: email }).sort({ date: -1 });
+
+    return NextResponse.json({ success: true, logs }, { status: 200 });
+  } catch (error) {
+    console.error('Sync GET Error:', error);
+    return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
   }
 }

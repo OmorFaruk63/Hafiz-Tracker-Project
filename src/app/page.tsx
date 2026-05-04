@@ -18,11 +18,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  CircularProgress
 } from '@mui/material';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import SyncIcon from '@mui/icons-material/Sync';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import StarsIcon from '@mui/icons-material/Stars';
 import NightlightIcon from '@mui/icons-material/Nightlight';
@@ -30,8 +33,10 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useHafizStore } from '@/store/useHafizStore';
 import { useSajdahDebt } from '@/hooks/useSajdahDebt';
 import { useThemeContext } from '@/components/AppThemeProvider';
+import { useSyncManager } from '@/hooks/useSyncManager';
 import { db } from '@/lib/hafizDB';
 import SaveIcon from '@mui/icons-material/Save';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
 
@@ -50,9 +55,12 @@ export default function Home() {
     startNewKhatam, 
     totalKhatams, 
     userEmail, 
-    setUserEmail 
+    setUserEmail,
+    setTotalKhatams,
+    setTotalSajdahsDone
   } = useHafizStore();
   const { remainingDebt } = useSajdahDebt();
+  const { isSyncing, lastSyncTime, syncNow } = useSyncManager();
 
   const [paraInput, setParaInput] = useState<number>(1);
   const [pageInput, setPageInput] = useState<number>(0);
@@ -63,6 +71,7 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(true);
   const [emailInput, setEmailInput] = useState('');
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -70,7 +79,6 @@ export default function Home() {
     setPageInput(lastPage);
     setIsOnline(navigator.onLine);
     
-    // Open email dialog if not set
     if (mounted && !userEmail) {
       setEmailDialogOpen(true);
     }
@@ -87,7 +95,6 @@ export default function Home() {
 
   const handleParaClick = (p: number) => {
     if (p === 30) {
-      // Trigger immediate Khatam reset when clicking 30 as requested
       import('canvas-confetti').then((confetti) => {
         confetti.default({
           particleCount: 150,
@@ -96,14 +103,12 @@ export default function Home() {
           colors: ['#2D6A4F', '#D4AF37', '#48CAE4']
         });
       });
-      
       startNewKhatam();
       setParaInput(1);
       setPageInput(0);
       setKhatamToastOpen(true);
       return;
     }
-
     setParaInput(p);
     if (p === lastPara) {
       setPageInput(lastPage);
@@ -120,7 +125,6 @@ export default function Home() {
       const isKhatam = validData.para === 30 && validData.page === 20;
 
       if (isKhatam) {
-        // Celebration logic
         import('canvas-confetti').then((confetti) => {
           confetti.default({
             particleCount: 150,
@@ -129,7 +133,6 @@ export default function Home() {
             colors: ['#2D6A4F', '#D4AF37', '#48CAE4']
           });
         });
-        
         startNewKhatam();
         setParaInput(1);
         setPageInput(0);
@@ -147,6 +150,9 @@ export default function Home() {
         sajdahsDone: 0,
         isSynced: false
       });
+      
+      // Trigger sync immediately if online
+      syncNow();
     } catch (error) {
       if (error instanceof z.ZodError) {
         setErrorMsg('Invalid input: Para must be 1-30 and Page 0-20.');
@@ -165,6 +171,45 @@ export default function Home() {
     }
   };
 
+  const handleRestoreFromCloud = async () => {
+    if (!emailInput || !z.string().email().safeParse(emailInput).success) {
+      setErrorMsg('Enter a valid email first.');
+      return;
+    }
+
+    try {
+      setIsRestoring(true);
+      const res = await fetch(`/api/sync?email=${emailInput}`);
+      const data = await res.json();
+
+      if (data.success && data.logs.length > 0) {
+        // Clear local logs and import from cloud
+        await db.dailyLogs.clear();
+        await db.dailyLogs.bulkAdd(data.logs.map((l: any) => ({
+          date: l.date,
+          endPara: l.endPara,
+          endPage: l.endPage,
+          sajdahsDone: l.sajdahsDone,
+          isSynced: true
+        })));
+
+        // Update Zustand with latest log
+        const latest = data.logs[0];
+        setLastReadPosition(latest.endPara, latest.endPage);
+        setUserEmail(emailInput);
+        setEmailDialogOpen(false);
+        setSnackbarOpen(true);
+      } else {
+        setErrorMsg('No backup found for this email.');
+      }
+    } catch (e) {
+      console.error(e);
+      setErrorMsg('Failed to restore data.');
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   if (!mounted) return null;
 
   return (
@@ -175,7 +220,24 @@ export default function Home() {
           <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontFamily: 'var(--font-amiri)' }}>
             Hafiz Tracker
           </Typography>
-          {!isOnline && <CloudOffIcon color="error" titleAccess="Offline" />}
+          {!isOnline ? (
+            <Tooltip title="Offline - Data saved locally">
+              <CloudOffIcon color="error" fontSize="small" />
+            </Tooltip>
+          ) : isSyncing ? (
+            <SyncIcon color="primary" fontSize="small" sx={{ animation: 'spin 2s linear infinite' }} />
+          ) : unsyncedCount > 0 ? (
+            <Tooltip title={`Click to sync ${unsyncedCount} pending logs`}>
+              <IconButton size="small" onClick={() => syncNow()} sx={{ bgcolor: 'rgba(217, 119, 6, 0.1)', border: '1px solid #D97706' }}>
+                <SyncIcon sx={{ color: '#D97706', fontSize: '1.2rem' }} />
+                <Typography variant="caption" sx={{ ml: 0.5, color: '#D97706', fontWeight: 'bold' }}>{unsyncedCount}</Typography>
+              </IconButton>
+            </Tooltip>
+          ) : (
+            <Tooltip title={`Cloud Backup Active. Last synced: ${lastSyncTime?.toLocaleTimeString() || 'Just now'}`}>
+              <CloudDoneIcon color="success" fontSize="small" />
+            </Tooltip>
+          )}
         </Box>
         <Box>
           <IconButton onClick={() => setEmailDialogOpen(true)} color="primary" sx={{ mr: 1 }}>
@@ -187,16 +249,15 @@ export default function Home() {
         </Box>
       </Box>
 
-      {/* User Info (Small) */}
       {userEmail && (
         <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right', mt: -2 }}>
-          Logged in as: <strong>{userEmail}</strong>
+          Synced with: <strong>{userEmail}</strong>
         </Typography>
       )}
 
       {/* Progress Overview */}
       <Grid container spacing={2}>
-        <Grid size={12}>
+        <Grid item xs={12}>
           <Paper 
             elevation={0}
             sx={{ 
@@ -270,7 +331,7 @@ export default function Home() {
           </Typography>
           <Grid container spacing={1}>
             {Array.from({ length: 30 }, (_, i) => i + 1).map((p) => (
-              <Grid size={{ xs: 2.4, sm: 2, md: 1.2 }} key={p}>
+              <Grid item xs={2.4} sm={2} md={1.2} key={p}>
                 <Button
                   variant={paraInput === p ? "contained" : "outlined"}
                   color={paraInput === p ? "primary" : "inherit"}
@@ -350,7 +411,7 @@ export default function Home() {
       </Card>
 
       {/* User Email Dialog */}
-      <Dialog open={emailDialogOpen} onClose={() => userEmail && setEmailDialogOpen(false)}>
+      <Dialog open={emailDialogOpen} onClose={() => userEmail && !isRestoring && setEmailDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: 'bold', textAlign: 'center' }}>Set Your Identity</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
@@ -365,13 +426,32 @@ export default function Home() {
             variant="outlined"
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
+            disabled={isRestoring}
           />
         </DialogContent>
-        <DialogActions sx={{ pb: 3, px: 3 }}>
-          {userEmail && <Button onClick={() => setEmailDialogOpen(false)}>Cancel</Button>}
-          <Button onClick={handleSetEmail} variant="contained" fullWidth color="primary">
+        <DialogActions sx={{ pb: 3, px: 3, flexDirection: 'column', gap: 1 }}>
+          <Button 
+            onClick={handleSetEmail} 
+            variant="contained" 
+            fullWidth 
+            color="primary"
+            disabled={isRestoring}
+          >
             Start Syncing
           </Button>
+          <Button 
+            onClick={handleRestoreFromCloud} 
+            variant="outlined" 
+            fullWidth 
+            color="secondary"
+            startIcon={isRestoring ? <CircularProgress size={18} /> : <CloudDownloadIcon />}
+            disabled={isRestoring}
+          >
+            Restore Backup from Cloud
+          </Button>
+          {userEmail && (
+            <Button onClick={() => setEmailDialogOpen(false)} sx={{ mt: 1 }}>Cancel</Button>
+          )}
         </DialogActions>
       </Dialog>
 
@@ -408,6 +488,12 @@ export default function Home() {
           Alhamdulillah! Progress saved successfully.
         </Alert>
       </Snackbar>
+      <style jsx global>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Box>
   );
 }

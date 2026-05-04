@@ -1,17 +1,31 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { db } from '@/lib/hafizDB';
 import { useHafizStore } from '@/store/useHafizStore';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 export function useSyncManager() {
   const { userEmail } = useHafizStore();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+
+  // Use live query to keep track of unsynced logs
+  const unsyncedCount = useLiveQuery(
+    () => db.dailyLogs.filter(log => !log.isSynced).count(),
+    []
+  ) ?? 0;
 
   const syncNow = useCallback(async () => {
-    if (typeof window === 'undefined' || !navigator.onLine || !userEmail) return;
+    if (typeof window === 'undefined' || !navigator.onLine || !userEmail || isSyncing) return;
 
     try {
+      setIsSyncing(true);
       const logsToSync = await db.dailyLogs.filter(log => !log.isSynced).toArray();
       
-      if (logsToSync.length === 0) return;
+      if (logsToSync.length === 0) {
+        setIsSyncing(false);
+        setLastSyncTime(new Date());
+        return;
+      }
 
       const response = await fetch('/api/sync', {
         method: 'POST',
@@ -31,21 +45,29 @@ export function useSyncManager() {
           }
         });
         
+        setLastSyncTime(new Date());
         console.log(`Successfully synced ${idsToUpdate.length} logs for ${userEmail}.`);
       }
     } catch (error) {
       console.error('Sync failed:', error);
+    } finally {
+      setIsSyncing(false);
     }
-  }, [userEmail]);
+  }, [userEmail, isSyncing]);
 
+  // Initial and Periodic Sync
   useEffect(() => {
     syncNow();
     window.addEventListener('online', syncNow);
     
+    // Auto sync every 5 minutes if online
+    const interval = setInterval(syncNow, 5 * 60 * 1000);
+    
     return () => {
       window.removeEventListener('online', syncNow);
+      clearInterval(interval);
     };
   }, [syncNow, userEmail]);
 
-  return { syncNow };
+  return { syncNow, isSyncing, lastSyncTime, unsyncedCount };
 }
