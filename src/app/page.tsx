@@ -60,7 +60,7 @@ export default function Home() {
     setTotalSajdahsDone
   } = useHafizStore();
   const { remainingDebt } = useSajdahDebt();
-  const { isSyncing, lastSyncTime, syncNow } = useSyncManager();
+  const { isSyncing, lastSyncTime, syncNow, unsyncedCount } = useSyncManager();
 
   const [paraInput, setParaInput] = useState<number>(1);
   const [pageInput, setPageInput] = useState<number>(0);
@@ -100,7 +100,7 @@ export default function Home() {
           particleCount: 150,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#2D6A4F', '#D4AF37', '#48CAE4']
+          colors: ['#0F5132', '#D6B25E', '#1F9D7A']
         });
       });
       startNewKhatam();
@@ -130,7 +130,7 @@ export default function Home() {
             particleCount: 150,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#2D6A4F', '#D4AF37', '#48CAE4']
+            colors: ['#0F5132', '#D6B25E', '#1F9D7A']
           });
         });
         startNewKhatam();
@@ -217,7 +217,7 @@ export default function Home() {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontFamily: 'var(--font-amiri)' }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', fontFamily: 'var(--font-amiri)', letterSpacing: 0.4 }}>
             Hafiz Tracker
           </Typography>
           {!isOnline ? (
@@ -228,9 +228,9 @@ export default function Home() {
             <SyncIcon color="primary" fontSize="small" sx={{ animation: 'spin 2s linear infinite' }} />
           ) : unsyncedCount > 0 ? (
             <Tooltip title={`Click to sync ${unsyncedCount} pending logs`}>
-              <IconButton size="small" onClick={() => syncNow()} sx={{ bgcolor: 'rgba(217, 119, 6, 0.1)', border: '1px solid #D97706' }}>
-                <SyncIcon sx={{ color: '#D97706', fontSize: '1.2rem' }} />
-                <Typography variant="caption" sx={{ ml: 0.5, color: '#D97706', fontWeight: 'bold' }}>{unsyncedCount}</Typography>
+              <IconButton size="small" onClick={() => syncNow()} sx={{ bgcolor: 'rgba(214, 178, 94, 0.12)', border: '1px solid rgba(214, 178, 94, 0.6)' }}>
+                <SyncIcon sx={{ color: '#D6B25E', fontSize: '1.2rem' }} />
+                <Typography variant="caption" sx={{ ml: 0.5, color: '#D6B25E', fontWeight: 800 }}>{unsyncedCount}</Typography>
               </IconButton>
             </Tooltip>
           ) : (
@@ -257,13 +257,13 @@ export default function Home() {
 
       {/* Progress Overview */}
       <Grid container spacing={2}>
-        <Grid item xs={12}>
+        <Grid xs={12}>
           <Paper 
             elevation={0}
             sx={{ 
               p: 3, 
               borderRadius: '24px', 
-              background: `linear-gradient(135deg, ${mode === 'light' ? '#2D6A4F' : '#1B4332'} 0%, ${mode === 'light' ? '#52B788' : '#2D6A4F'} 100%)`,
+              background: `linear-gradient(135deg, ${mode === 'light' ? '#0F5132' : '#0A3A25'} 0%, ${mode === 'light' ? '#1F7A55' : '#0F5132'} 100%)`,
               color: '#fff',
               position: 'relative',
               overflow: 'hidden'
@@ -331,7 +331,7 @@ export default function Home() {
           </Typography>
           <Grid container spacing={1}>
             {Array.from({ length: 30 }, (_, i) => i + 1).map((p) => (
-              <Grid item xs={2.4} sm={2} md={1.2} key={p}>
+              <Grid xs={2.4} sm={2} md={1.2} key={p}>
                 <Button
                   variant={paraInput === p ? "contained" : "outlined"}
                   color={paraInput === p ? "primary" : "inherit"}
@@ -345,9 +345,9 @@ export default function Home() {
                     fontSize: '0.9rem',
                     borderRadius: '12px',
                     borderColor: paraInput === p ? 'primary.main' : 'divider',
-                    boxShadow: paraInput === p ? '0 4px 12px rgba(45, 106, 79, 0.2)' : 'none',
+                    boxShadow: paraInput === p ? '0 6px 16px rgba(15, 81, 50, 0.18)' : 'none',
                     '&:hover': {
-                      bgcolor: paraInput === p ? 'primary.main' : 'rgba(45, 106, 79, 0.05)'
+                      bgcolor: paraInput === p ? 'primary.main' : 'rgba(15, 81, 50, 0.06)'
                     }
                   }}
                 >
@@ -380,7 +380,7 @@ export default function Home() {
                   width: 24,
                   height: 24,
                   border: '4px solid #fff',
-                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  boxShadow: '0 6px 14px rgba(0,0,0,0.15)'
                 },
                 '& .MuiSlider-rail': {
                   opacity: 0.2,
@@ -402,7 +402,7 @@ export default function Home() {
               py: 2, 
               fontSize: '1.1rem', 
               borderRadius: '16px',
-              boxShadow: '0 8px 24px rgba(45, 106, 79, 0.2)'
+              boxShadow: '0 12px 28px rgba(15, 81, 50, 0.22)'
             }}
           >
             Save Progress

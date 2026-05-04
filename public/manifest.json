@@ -1,0 +1,17 @@
+{
+  "name": "Hafiz Tracker",
+  "short_name": "Hafiz",
+  "description": "Offline-first Quran reading tracker for Huffaz",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2D6A4F",
+  "icons": [
+    {
+      "src": "/next.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

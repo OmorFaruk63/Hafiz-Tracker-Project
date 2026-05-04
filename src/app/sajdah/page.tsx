@@ -78,12 +78,19 @@ export default function SajdahPaymentPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', textAlign: 'center', mt: 2 }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', mt: 2, fontFamily: 'var(--font-amiri)', letterSpacing: 0.4 }}>
         Sajdah Ledger
       </Typography>
 
       {/* Header Card */}
-      <Card sx={{ bgcolor: remainingDebt > 0 ? 'secondary.main' : 'primary.main', color: '#fff', borderRadius: '24px' }}>
+      <Card sx={{
+        color: remainingDebt > 0 ? '#1B1407' : '#fff',
+        borderRadius: '24px',
+        backgroundImage: remainingDebt > 0
+          ? 'linear-gradient(135deg, #F0D38B 0%, #D6B25E 55%, #B28A3E 100%)'
+          : 'linear-gradient(135deg, #0F5132 0%, #1F7A55 60%, #0F5132 100%)',
+        border: '1px solid rgba(214, 178, 94, 0.35)'
+      }}>
         <CardContent sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="h6" sx={{ opacity: 0.9 }}>
             {remainingDebt > 0 ? 'Total Pending Sajdahs' : 'All Sajdahs Completed'}
@@ -95,19 +102,24 @@ export default function SajdahPaymentPage() {
       </Card>
 
       {/* Payment Form */}
-      <Paper sx={{ p: 3, borderRadius: '24px', textAlign: 'center', border: '1px solid rgba(217, 119, 6, 0.2)' }}>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>Record Payment</Typography>
+      <Paper sx={{
+        p: 3,
+        borderRadius: '24px',
+        textAlign: 'center',
+        border: '1px solid rgba(214, 178, 94, 0.3)'
+      }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, color: 'primary.main' }}>Record Payment</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, mb: 3 }}>
           <IconButton 
             onClick={() => setCount(Math.max(1, count - 1))} 
-            sx={{ bgcolor: 'rgba(4, 47, 46, 0.05)', p: 2 }}
+            sx={{ bgcolor: 'rgba(15, 81, 50, 0.08)', p: 2, border: '1px solid rgba(214, 178, 94, 0.35)' }}
           >
             <RemoveIcon color="primary" />
           </IconButton>
           <Typography variant="h4" sx={{ fontWeight: 'bold', minWidth: 40 }}>{count}</Typography>
           <IconButton 
             onClick={() => setCount(count + 1)}
-            sx={{ bgcolor: 'rgba(4, 47, 46, 0.05)', p: 2 }}
+            sx={{ bgcolor: 'rgba(15, 81, 50, 0.08)', p: 2, border: '1px solid rgba(214, 178, 94, 0.35)' }}
           >
             <AddIcon color="primary" />
           </IconButton>
@@ -117,7 +129,13 @@ export default function SajdahPaymentPage() {
           color="secondary" 
           fullWidth 
           size="large"
-          sx={{ py: 1.5, fontWeight: 'bold', borderRadius: '12px' }}
+          sx={{
+            py: 1.5,
+            fontWeight: 800,
+            borderRadius: '12px',
+            color: '#1B1407',
+            boxShadow: '0 12px 24px rgba(214, 178, 94, 0.25)'
+          }}
           onClick={handleConfirm}
         >
           Confirm Payment
@@ -125,8 +143,8 @@ export default function SajdahPaymentPage() {
       </Paper>
 
       {/* List Section */}
-      <Paper sx={{ borderRadius: '24px', overflow: 'hidden' }}>
-        <Typography variant="h6" sx={{ p: 2, fontWeight: 'bold', bgcolor: 'primary.main', color: '#fff' }}>
+      <Paper sx={{ borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(214, 178, 94, 0.3)' }}>
+        <Typography variant="h6" sx={{ p: 2, fontWeight: 800, bgcolor: 'primary.main', color: '#F0D38B' }}>
           Sajdah Locations (Current Khatam)
         </Typography>
         <List disablePadding>
@@ -139,7 +157,7 @@ export default function SajdahPaymentPage() {
                     {isPassed ? (
                       <PendingIcon color="secondary" />
                     ) : (
-                      <CheckCircleIcon sx={{ color: 'rgba(0,0,0,0.1)' }} />
+                      <CheckCircleIcon sx={{ color: 'rgba(15, 81, 50, 0.15)' }} />
                     )}
                   </ListItemIcon>
                   <ListItemText 
@@ -154,7 +172,7 @@ export default function SajdahPaymentPage() {
                       }
                     }}
                   />
-                  {isPassed && <Typography variant="caption" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>PENDING</Typography>}
+                  {isPassed && <Typography variant="caption" sx={{ color: 'secondary.main', fontWeight: 800 }}>PENDING</Typography>}
                 </ListItem>
                 {i < SAJDAH_LOCATIONS.length - 1 && <Divider />}
               </React.Fragment>

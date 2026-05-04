@@ -33,7 +33,17 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       <Box sx={{ pb: 7, height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <AppBar position="static">
           <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                flexGrow: 1,
+                fontWeight: 800,
+                letterSpacing: 0.4,
+                fontFamily: 'var(--font-amiri)',
+                color: 'secondary.light'
+              }}
+            >
               Hafiz Tracker
             </Typography>
           </Toolbar>

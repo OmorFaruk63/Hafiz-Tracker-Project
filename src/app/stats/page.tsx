@@ -107,14 +107,21 @@ export default function AdvancedStatsPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10, pt: 2 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', fontFamily: 'var(--font-amiri)' }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', fontFamily: 'var(--font-amiri)', letterSpacing: 0.5 }}>
         Strength Analysis
       </Typography>
 
       {/* Summary Tiles */}
       <Grid container spacing={2}>
         <Grid size={6}>
-          <Card sx={{ bgcolor: 'primary.main', color: '#fff', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+          <Card sx={{
+            color: '#fff',
+            borderRadius: '24px',
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #0F5132 0%, #1F7A55 60%, #0F5132 100%)',
+            border: '1px solid rgba(214, 178, 94, 0.35)'
+          }}>
             <CardContent>
               <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>AVG PARAS / DAY</Typography>
               <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.avg}</Typography>
@@ -123,7 +130,14 @@ export default function AdvancedStatsPage() {
           </Card>
         </Grid>
         <Grid size={6}>
-          <Card sx={{ bgcolor: 'info.main', color: '#fff', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+          <Card sx={{
+            color: '#fff',
+            borderRadius: '24px',
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #1F9D7A 0%, #0F5132 100%)',
+            border: '1px solid rgba(214, 178, 94, 0.25)'
+          }}>
             <CardContent>
               <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
               <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.sajdahs}</Typography>
@@ -132,7 +146,16 @@ export default function AdvancedStatsPage() {
           </Card>
         </Grid>
         <Grid size={12}>
-          <Card sx={{ bgcolor: 'secondary.main', color: '#fff', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1 }}>
+          <Card sx={{
+            color: '#1B1407',
+            borderRadius: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            p: 1,
+            backgroundImage: 'linear-gradient(135deg, #F0D38B 0%, #D6B25E 55%, #B28A3E 100%)',
+            border: '1px solid rgba(15, 81, 50, 0.2)'
+          }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
               <AutoStoriesIcon fontSize="large" />
               <Box>
@@ -149,7 +172,13 @@ export default function AdvancedStatsPage() {
       </Grid>
 
       {/* Monthly Progress Calendar */}
-      <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+      <Paper elevation={0} sx={{
+        p: 3,
+        borderRadius: '24px',
+        border: '1px solid',
+        borderColor: 'rgba(214, 178, 94, 0.3)',
+        bgcolor: 'background.paper'
+      }}>
         <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
           <TimelineIcon /> Reading Consistency
         </Typography>
@@ -165,7 +194,7 @@ export default function AdvancedStatsPage() {
                     value={100}
                     size={40}
                     thickness={3}
-                    sx={{ color: 'rgba(0,0,0,0.05)', position: 'absolute' }}
+                    sx={{ color: 'rgba(15, 81, 50, 0.08)', position: 'absolute' }}
                   />
                   <CircularProgress
                     variant="determinate"
@@ -197,7 +226,13 @@ export default function AdvancedStatsPage() {
       </Paper>
 
       {/* Interactive Activity Chart */}
-      <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+      <Paper elevation={0} sx={{
+        p: 3,
+        borderRadius: '24px',
+        border: '1px solid',
+        borderColor: 'rgba(214, 178, 94, 0.3)',
+        bgcolor: 'background.paper'
+      }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Activity Trends</Typography>
           <ToggleButtonGroup
@@ -211,8 +246,8 @@ export default function AdvancedStatsPage() {
                 borderRadius: '8px', 
                 px: 2,
                 border: 'none',
-                bgcolor: 'rgba(45, 106, 79, 0.05)',
-                '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff' }
+                bgcolor: 'rgba(15, 81, 50, 0.08)',
+                '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', boxShadow: '0 6px 16px rgba(15, 81, 50, 0.2)' }
               } 
             }}
           >
@@ -224,28 +259,28 @@ export default function AdvancedStatsPage() {
           <ResponsiveContainer width="100%" height="100%">
             {timeFilter === 'weekly' ? (
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
                 <Tooltip 
-                  cursor={{ fill: 'rgba(45, 106, 79, 0.05)' }} 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  cursor={{ fill: 'rgba(15, 81, 50, 0.06)' }} 
+                  contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
                 />
-                <Bar dataKey="paras" fill={theme.palette.primary.main} radius={[6, 6, 0, 0]} barSize={30} />
+                <Bar dataKey="paras" fill={theme.palette.primary.main} radius={[8, 8, 0, 0]} barSize={30} />
               </BarChart>
             ) : (
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorParas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.35}/>
                     <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 10 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
                 />
                 <Area type="monotone" dataKey="paras" stroke={theme.palette.secondary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorParas)" />
               </AreaChart>

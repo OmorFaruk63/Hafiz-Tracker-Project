@@ -43,22 +43,25 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
     palette: {
       mode,
       primary: {
-        main: '#2D6A4F', // Emerald Green
-        light: '#52B788',
-        dark: '#1B4332',
+        main: '#0F5132',
+        light: '#1F7A55',
+        dark: '#0A3A25',
       },
       secondary: {
-        main: '#D4AF37', // Metallic Gold
+        main: '#D6B25E',
+        light: '#F0D38B',
+        dark: '#B28A3E',
       },
       info: {
-        main: '#48CAE4', // Sky Blue
+        main: '#1F9D7A',
       },
       background: {
-        default: mode === 'light' ? '#FFFDF5' : '#0F1A14', // Very light cream or dark green-black
-        paper: mode === 'light' ? '#FFFFFF' : '#1B2E24',
+        default: mode === 'light' ? '#F7F2E8' : '#0A1411',
+        paper: mode === 'light' ? '#FFFBF2' : '#0F1D18',
       },
       text: {
-        primary: mode === 'light' ? '#1B4332' : '#F8F9FA',
+        primary: mode === 'light' ? '#0F2E1D' : '#F6F0E6',
+        secondary: mode === 'light' ? '#385346' : '#CDBFA9',
       }
     },
     typography: {
@@ -74,14 +77,45 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
       borderRadius: 16,
     },
     components: {
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'linear-gradient(90deg, #0F5132 0%, #1F7A55 60%, #0F5132 100%)',
+            boxShadow: mode === 'light'
+              ? '0 8px 24px rgba(15, 81, 50, 0.18)'
+              : '0 8px 24px rgba(0, 0, 0, 0.45)',
+            borderBottom: '1px solid rgba(214, 178, 94, 0.35)'
+          }
+        }
+      },
+      MuiBottomNavigation: {
+        styleOverrides: {
+          root: {
+            background: mode === 'light'
+              ? 'linear-gradient(180deg, rgba(255, 251, 242, 0.95) 0%, rgba(247, 242, 232, 0.95) 100%)'
+              : 'linear-gradient(180deg, rgba(15, 29, 24, 0.98) 0%, rgba(10, 20, 17, 0.98) 100%)',
+            borderTop: '1px solid rgba(214, 178, 94, 0.25)'
+          }
+        }
+      },
+      MuiBottomNavigationAction: {
+        styleOverrides: {
+          root: {
+            color: mode === 'light' ? '#385346' : '#CDBFA9',
+            '&.Mui-selected': {
+              color: '#D6B25E'
+            }
+          }
+        }
+      },
       MuiCard: {
         styleOverrides: {
           root: {
             borderRadius: '24px',
             boxShadow: mode === 'light' 
-              ? '0 10px 40px rgba(45, 106, 79, 0.08)' 
+              ? '0 12px 36px rgba(15, 81, 50, 0.12)' 
               : '0 10px 40px rgba(0, 0, 0, 0.3)',
-            border: mode === 'light' ? '1px solid rgba(212, 175, 55, 0.1)' : '1px solid rgba(212, 175, 55, 0.05)',
+            border: mode === 'light' ? '1px solid rgba(214, 178, 94, 0.2)' : '1px solid rgba(214, 178, 94, 0.1)',
           }
         }
       },
@@ -93,6 +127,22 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
             borderRadius: '12px',
           }
         }
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: mode === 'light'
+              ? 'linear-gradient(180deg, rgba(255, 251, 242, 0.96) 0%, rgba(247, 242, 232, 0.96) 100%)'
+              : 'linear-gradient(180deg, rgba(15, 29, 24, 0.98) 0%, rgba(10, 20, 17, 0.98) 100%)',
+          }
+        }
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: '999px'
+          }
+        }
       }
     }
   }), [mode]);
@@ -102,7 +152,7 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
   }
 
   // Complex Islamic Geometric Pattern
-  const patternSvg = `data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0L61.23 38.77H100L68.77 61.23L80 100L50 77.54L20 100L31.23 61.23L0 38.77H38.77L50 0Z' fill='%23D4AF37' fill-opacity='0.03'/%3E%3C/svg%3E`;
+  const patternSvg = `data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cpath d='M60 6L73.5 45H114L81 69L93 108L60 84L27 108L39 69L6 45H46.5L60 6Z' fill='%23D6B25E' fill-opacity='0.035'/%3E%3Cpath d='M60 24L69.6 52H98L75.2 68L83 96L60 80L37 96L44.8 68L22 52H50.4L60 24Z' fill='%230F5132' fill-opacity='0.03'/%3E%3C/g%3E%3C/svg%3E`;
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme }}>
@@ -110,14 +160,19 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
         <CssBaseline />
         <GlobalStyles styles={{
           body: {
-            backgroundImage: `url("${patternSvg}")`,
+            backgroundImage: mode === 'light'
+              ? `radial-gradient(1200px 600px at 10% 0%, rgba(214, 178, 94, 0.12), transparent 55%), radial-gradient(900px 500px at 90% 10%, rgba(31, 157, 122, 0.12), transparent 60%), url("${patternSvg}")`
+              : `radial-gradient(1200px 600px at 10% 0%, rgba(214, 178, 94, 0.08), transparent 55%), radial-gradient(900px 500px at 90% 10%, rgba(31, 157, 122, 0.08), transparent 60%), url("${patternSvg}")`,
             backgroundAttachment: 'fixed',
             position: 'relative',
             overflowX: 'hidden',
+          },
+          '::selection': {
+            background: 'rgba(214, 178, 94, 0.35)'
           }
         }} />
         
-        {/* Skyblue & Gold Floating Motifs */}
+        {/* Floating Motifs */}
         <Box
           sx={{
             position: 'fixed',
@@ -128,7 +183,7 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
             zIndex: -1,
             opacity: 0.1,
             pointerEvents: 'none',
-            color: 'info.main'
+            color: 'secondary.main'
           }}
         >
           <svg viewBox="0 0 24 24" fill="currentColor">
@@ -146,7 +201,7 @@ export default function AppThemeProvider({ children }: { children: React.ReactNo
             zIndex: -1,
             opacity: 0.1,
             pointerEvents: 'none',
-            color: 'secondary.main'
+            color: 'info.main'
           }}
         >
           <svg viewBox="0 0 24 24" fill="currentColor">

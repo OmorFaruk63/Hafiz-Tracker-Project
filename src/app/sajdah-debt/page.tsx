@@ -74,7 +74,7 @@ export default function SajdahLedgerPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2, pb: 4 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', fontFamily: 'var(--font-amiri)', letterSpacing: 0.4, textAlign: 'center' }}>
         Sajdah Ledger
       </Typography>
 
@@ -86,7 +86,7 @@ export default function SajdahLedgerPage() {
             value={100} 
             size={180} 
             thickness={3} 
-            sx={{ color: 'rgba(0,0,0,0.05)' }} 
+            sx={{ color: 'rgba(15, 81, 50, 0.08)' }} 
           />
           <CircularProgress 
             variant="determinate" 
@@ -120,9 +120,9 @@ export default function SajdahLedgerPage() {
       </Box>
 
       {/* The 'Pay Debt' Input */}
-      <Card>
+      <Card sx={{ border: '1px solid rgba(214, 178, 94, 0.25)' }}>
         <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
             Pay Debt
           </Typography>
           <TextField
@@ -141,7 +141,7 @@ export default function SajdahLedgerPage() {
             startIcon={<TaskAltIcon />}
             onClick={handleRecord}
             disabled={!sajdahInput || Number(sajdahInput) <= 0}
-            sx={{ fontWeight: 'bold', py: 1.5 }}
+            sx={{ fontWeight: 800, py: 1.5, boxShadow: '0 10px 22px rgba(15, 81, 50, 0.2)' }}
           >
             Record Sajdahs Performed
           </Button>
@@ -149,9 +149,9 @@ export default function SajdahLedgerPage() {
       </Card>
 
       {/* List Section */}
-      <Card>
+      <Card sx={{ border: '1px solid rgba(214, 178, 94, 0.25)' }}>
         <CardContent>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: 'primary.main' }}>
             Recent Sajdahs
           </Typography>
           {(!recentLogs || recentLogs.length === 0) ? (
