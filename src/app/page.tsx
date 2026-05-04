@@ -267,8 +267,8 @@ export default function Home() {
       )}
 
       {/* Progress Overview */}
-      <Grid container spacing={2}>
-        <Grid xs={12}>
+        <Grid container spacing={2}>
+          <Grid size={12}>
           <Paper 
             elevation={0}
             sx={{ 
@@ -321,8 +321,8 @@ export default function Home() {
               }} 
             />
           </Paper>
+          </Grid>
         </Grid>
-      </Grid>
 
       {errorMsg && (
         <Alert severity="error" onClose={() => setErrorMsg(null)} sx={{ borderRadius: '12px' }}>
@@ -342,7 +342,7 @@ export default function Home() {
           </Typography>
           <Grid container spacing={1}>
             {Array.from({ length: 30 }, (_, i) => i + 1).map((p) => (
-              <Grid xs={2.4} sm={2} md={1.2} key={p}>
+              <Grid size={{ xs: 2, sm: 2, md: 1 }} key={p}>
                 <Button
                   variant={paraInput === p ? "contained" : "outlined"}
                   color={paraInput === p ? "primary" : "inherit"}
