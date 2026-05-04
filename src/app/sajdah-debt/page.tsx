@@ -50,13 +50,25 @@ export default function SajdahLedgerPage() {
     // 2. Add to Dexie dailyLogs
     const today = new Date().toISOString().split('T')[0];
     try {
-      await db.dailyLogs.add({
-        date: today,
-        endPara: lastPara,
-        endPage: lastPage,
-        sajdahsDone: amount,
-        isSynced: false
-      });
+      const existing = await db.dailyLogs.where('date').equals(today).first();
+      const nextSajdahs = (existing?.sajdahsDone ?? 0) + amount;
+
+      if (existing?.id) {
+        await db.dailyLogs.update(existing.id, {
+          endPara: lastPara,
+          endPage: lastPage,
+          sajdahsDone: nextSajdahs,
+          isSynced: false
+        });
+      } else {
+        await db.dailyLogs.add({
+          date: today,
+          endPara: lastPara,
+          endPage: lastPage,
+          sajdahsDone: nextSajdahs,
+          isSynced: false
+        });
+      }
       setSajdahInput('');
       setSnackbarOpen(true);
       

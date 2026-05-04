@@ -60,13 +60,25 @@ export default function SajdahPaymentPage() {
     // Update Dexie
     const today = new Date().toISOString().split('T')[0];
     try {
-      await db.dailyLogs.add({
-        date: today,
-        endPara: lastPara,
-        endPage: lastPage,
-        sajdahsDone: count,
-        isSynced: false
-      });
+      const existing = await db.dailyLogs.where('date').equals(today).first();
+      const nextSajdahs = (existing?.sajdahsDone ?? 0) + count;
+
+      if (existing?.id) {
+        await db.dailyLogs.update(existing.id, {
+          endPara: lastPara,
+          endPage: lastPage,
+          sajdahsDone: nextSajdahs,
+          isSynced: false
+        });
+      } else {
+        await db.dailyLogs.add({
+          date: today,
+          endPara: lastPara,
+          endPage: lastPage,
+          sajdahsDone: nextSajdahs,
+          isSynced: false
+        });
+      }
       
       setSnackbarOpen(true);
       setCount(1);

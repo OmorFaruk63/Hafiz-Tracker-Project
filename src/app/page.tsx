@@ -143,13 +143,24 @@ export default function Home() {
       }
 
       const today = new Date().toISOString().split('T')[0];
-      await db.dailyLogs.add({
-        date: today,
-        endPara: validData.para,
-        endPage: validData.page,
-        sajdahsDone: 0,
-        isSynced: false
-      });
+      const existing = await db.dailyLogs.where('date').equals(today).first();
+
+      if (existing?.id) {
+        await db.dailyLogs.update(existing.id, {
+          endPara: validData.para,
+          endPage: validData.page,
+          sajdahsDone: existing.sajdahsDone ?? 0,
+          isSynced: false
+        });
+      } else {
+        await db.dailyLogs.add({
+          date: today,
+          endPara: validData.para,
+          endPage: validData.page,
+          sajdahsDone: 0,
+          isSynced: false
+        });
+      }
       
       // Trigger sync immediately if online
       syncNow();

@@ -17,18 +17,23 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    const logsToInsert = logs.map((log: any) => ({
-      userEmail: email,
-      date: log.date,
-      endPara: log.endPara,
-      endPage: log.endPage,
-      sajdahsDone: log.sajdahsDone,
+    const ops = logs.map((log: any) => ({
+      updateOne: {
+        filter: { userEmail: email, date: log.date },
+        update: {
+          $set: {
+            userEmail: email,
+            date: log.date,
+            endPara: log.endPara,
+            endPage: log.endPage,
+            sajdahsDone: log.sajdahsDone,
+          }
+        },
+        upsert: true
+      }
     }));
 
-    // Use bulkWrite/insertMany with ordered: false to skip duplicates
-    await DailyLogModel.insertMany(logsToInsert, { ordered: false }).catch(err => {
-      console.log('Handled duplicate logs during sync');
-    });
+    await DailyLogModel.bulkWrite(ops, { ordered: false });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
