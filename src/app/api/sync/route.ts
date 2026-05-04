@@ -27,6 +27,7 @@ export async function POST(req: Request) {
             endPara: log.endPara,
             endPage: log.endPage,
             sajdahsDone: log.sajdahsDone,
+            loggedAt: log.loggedAt,
           }
         },
         upsert: true

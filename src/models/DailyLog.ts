@@ -6,6 +6,7 @@ const DailyLogSchema = new mongoose.Schema({
   endPara: { type: Number, required: true },
   endPage: { type: Number, required: true },
   sajdahsDone: { type: Number, required: true },
+  loggedAt: { type: String },
 }, { timestamps: true });
 
 export const DailyLogModel = mongoose.models.DailyLog || mongoose.model('DailyLog', DailyLogSchema);

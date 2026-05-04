@@ -160,16 +160,19 @@ export default function HistoryPage() {
       if (existingForDate?.id) {
         await db.dailyLogs.update(existingForDate.id, {
           ...validData,
+          loggedAt: new Date().toISOString(),
           isSynced: false
         });
       } else if (form.id) {
         await db.dailyLogs.update(form.id, {
           ...validData,
+          loggedAt: new Date().toISOString(),
           isSynced: false
         });
       } else {
         await db.dailyLogs.add({
           ...validData,
+          loggedAt: new Date().toISOString(),
           isSynced: false
         });
       }

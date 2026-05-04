@@ -6,6 +6,7 @@ export interface DailyLog {
   endPara: number;
   endPage: number;
   sajdahsDone: number;
+  loggedAt?: string;
   isSynced: boolean;
 }
 
