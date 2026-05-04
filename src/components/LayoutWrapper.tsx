@@ -13,6 +13,7 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import HistoryIcon from '@mui/icons-material/History';
 import { useRouter, usePathname } from 'next/navigation';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     if (pathname === '/') return 0;
     if (pathname === '/sajdah') return 1;
     if (pathname === '/stats') return 2;
+    if (pathname === '/history') return 3;
     return 0;
   };
 
@@ -61,11 +63,13 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               if (newValue === 0) router.push('/');
               if (newValue === 1) router.push('/sajdah');
               if (newValue === 2) router.push('/stats');
+              if (newValue === 3) router.push('/history');
             }}
           >
             <BottomNavigationAction label="Home" icon={<HomeIcon />} />
             <BottomNavigationAction label="Sajdah Debt" icon={<PendingActionsIcon />} />
             <BottomNavigationAction label="Stats" icon={<QueryStatsIcon />} />
+            <BottomNavigationAction label="History" icon={<HistoryIcon />} />
           </BottomNavigation>
         </Paper>
       </Box>

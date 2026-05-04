@@ -7,22 +7,20 @@ import {
   Paper, 
   Card, 
   CardContent, 
-  Grid, 
-  ToggleButton, 
+  Grid,
+  ToggleButton,
   ToggleButtonGroup,
-  CircularProgress,
   useTheme,
-  IconButton
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis, 
   Tooltip, 
   ResponsiveContainer, 
-  LineChart, 
-  Line, 
   CartesianGrid,
   AreaChart,
   Area
@@ -30,7 +28,7 @@ import {
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/hafizDB';
 import { useHafizStore } from '@/store/useHafizStore';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, subDays } from 'date-fns';
+import { startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, endOfWeek, format, parseISO } from 'date-fns';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import StarsIcon from '@mui/icons-material/Stars';
@@ -38,11 +36,11 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 
 export default function AdvancedStatsPage() {
   const theme = useTheme();
-  const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const dailyLogs = useLiveQuery(() => db.dailyLogs.toArray());
-  const { totalKhatams, totalSajdahsDone, lastPara, userEmail } = useHafizStore();
+  const { totalKhatams, lastPara, userEmail } = useHafizStore();
   const [remoteDaily, setRemoteDaily] = useState<Array<{ date: string; parasRead: number; endPara: number; endPage: number }> | null>(null);
-  const [remoteMonthly, setRemoteMonthly] = useState<Array<{ month: string; parasRead: number }> | null>(null);
 
   const PAGE_PER_PARA = 20;
   const TOTAL_PARAS = 30;
@@ -74,22 +72,6 @@ export default function AdvancedStatsPage() {
     });
   };
 
-  const calcMonthlyTotals = (daily: Array<{ date: string; parasRead: number }>) => {
-    const totals = new Map<string, number>();
-
-    for (const entry of daily) {
-      const month = entry.date.slice(0, 7);
-      totals.set(month, (totals.get(month) || 0) + entry.parasRead);
-    }
-
-    return Array.from(totals.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, parasRead]) => ({
-        month,
-        parasRead: Number(parasRead.toFixed(2))
-      }));
-  };
-
   useEffect(() => {
     if (!userEmail || typeof window === 'undefined' || !navigator.onLine) return;
 
@@ -100,7 +82,6 @@ export default function AdvancedStatsPage() {
       .then((data) => {
         if (data?.success) {
           setRemoteDaily(data.daily || null);
-          setRemoteMonthly(data.monthly || null);
         }
       })
       .catch(() => undefined);
@@ -108,40 +89,45 @@ export default function AdvancedStatsPage() {
     return () => controller.abort();
   }, [userEmail]);
 
-  // Calendar Logic (Current Month)
-  const monthDays = useMemo(() => {
-    const start = startOfMonth(new Date());
-    const end = endOfMonth(new Date());
-    return eachDayOfInterval({ start, end });
-  }, []);
+  const availableMonths = useMemo(() => {
+    const localDaily = dailyLogs ? calcDailyReads(dailyLogs) : [];
+    const dailySource = remoteDaily ?? localDaily;
 
-  const getLogForDay = (date: Date) => {
-    if (!dailyLogs) return null;
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return dailyLogs.find(log => log.date === dateStr);
-  };
+    const months = Array.from(
+      new Set(dailySource.map(entry => entry.date.slice(0, 7)))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return months.length > 0 ? months : [format(new Date(), 'yyyy-MM')];
+  }, [dailyLogs, remoteDaily]);
+
+  useEffect(() => {
+    if (!availableMonths.includes(selectedMonth)) {
+      setSelectedMonth(availableMonths[availableMonths.length - 1]);
+    }
+  }, [availableMonths, selectedMonth]);
 
   // Summary Logic
   const statsSummary = useMemo(() => {
     const localDaily = dailyLogs ? calcDailyReads(dailyLogs) : [];
     const dailySource = remoteDaily ?? localDaily;
 
-    if (!dailySource || dailySource.length === 0) return { avg: 0, streak: 0, sajdahs: 0, totalPages: 0 };
+    const filteredDaily = dailySource.filter(log => log.date.startsWith(selectedMonth));
 
-    const totalParas = dailySource.reduce((acc, log) => acc + log.parasRead, 0);
-    const avg = (totalParas / dailySource.length).toFixed(1);
+    if (!dailySource || dailySource.length === 0 || filteredDaily.length === 0) {
+      return { avg: 0, sajdahs: 0, totalParas: 0, daysLogged: 0 };
+    }
 
-    const thisMonth = format(new Date(), 'yyyy-MM');
+    const totalParas = filteredDaily.reduce((acc, log) => acc + log.parasRead, 0);
+    const avg = (totalParas / filteredDaily.length).toFixed(1);
+
     const sajdahs = dailyLogs
       ? dailyLogs
-          .filter(log => log.date.startsWith(thisMonth))
+          .filter(log => log.date.startsWith(selectedMonth))
           .reduce((acc, log) => acc + (log.sajdahsDone || 0), 0)
       : 0;
 
-    const totalPages = dailyLogs ? dailyLogs.reduce((acc, log) => acc + (log.endPage || 0), 0) : 0;
-
-    return { avg, streak: 0, sajdahs, totalPages };
-  }, [dailyLogs, remoteDaily]);
+    return { avg, sajdahs, totalParas, daysLogged: filteredDaily.length };
+  }, [dailyLogs, remoteDaily, selectedMonth]);
 
   // Chart Data
   const chartData = useMemo(() => {
@@ -150,57 +136,61 @@ export default function AdvancedStatsPage() {
 
     if (!dailySource) return [];
 
-    const getDailyForDate = (date: Date) => {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      return dailySource.find(log => log.date === dateStr);
+    const dailyForMonth = dailySource.filter(log => log.date.startsWith(selectedMonth));
+    const dailyByDate = new Map(dailyForMonth.map(log => [log.date, log]));
+
+    const sumForRange = (start: Date, end: Date) => {
+      const days = eachDayOfInterval({ start, end });
+      return days.reduce((acc, day) => {
+        const log = dailyByDate.get(format(day, 'yyyy-MM-dd'));
+        return acc + (log ? log.parasRead : 0);
+      }, 0);
     };
 
-    if (timeFilter === 'daily') {
-      const end = new Date();
-      const start = subDays(end, 13);
-      const days = eachDayOfInterval({ start, end });
-
-      return days.map(day => {
-        const log = getDailyForDate(day);
-        return {
-          name: format(day, 'dd'),
-          paras: log ? log.parasRead : 0
-        };
-      });
-    }
-
     if (timeFilter === 'weekly') {
-      const start = startOfWeek(new Date());
-      const end = endOfWeek(new Date());
-      const days = eachDayOfInterval({ start, end });
+      const monthStart = startOfMonth(parseISO(`${selectedMonth}-01`));
+      const monthEnd = endOfMonth(monthStart);
+      const weekStarts = eachWeekOfInterval({ start: monthStart, end: monthEnd });
 
-      return days.map(day => {
-        const log = getDailyForDate(day);
+      return weekStarts.map((weekStart) => {
+        const weekEnd = endOfWeek(weekStart) > monthEnd ? monthEnd : endOfWeek(weekStart);
+        const total = sumForRange(weekStart, weekEnd);
+
         return {
-          name: format(day, 'EEE'),
-          paras: log ? log.parasRead : 0
+          name: `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`,
+          paras: Number(total.toFixed(2))
         };
       });
     }
 
-    const start = startOfMonth(new Date());
-    const end = endOfMonth(new Date());
-    const days = eachDayOfInterval({ start, end });
+    if (timeFilter === 'monthly') {
+      const monthTotals = new Map<string, number>();
+
+      for (const log of dailySource) {
+        const month = log.date.slice(0, 7);
+        monthTotals.set(month, (monthTotals.get(month) || 0) + log.parasRead);
+      }
+
+      return Array.from(monthTotals.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, total]) => ({
+          name: format(parseISO(`${month}-01`), 'MMM yy'),
+          paras: Number(total.toFixed(2))
+        }));
+    }
+
+    const monthStart = startOfMonth(parseISO(`${selectedMonth}-01`));
+    const monthEnd = endOfMonth(monthStart);
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
     return days.map(day => {
-      const log = getDailyForDate(day);
+      const log = dailyByDate.get(format(day, 'yyyy-MM-dd'));
       return {
         name: format(day, 'dd'),
         paras: log ? log.parasRead : 0
       };
     });
-  }, [dailyLogs, remoteDaily, timeFilter]);
-
-  const monthlyTotals = useMemo(() => {
-    if (remoteMonthly) return remoteMonthly;
-    const localDaily = dailyLogs ? calcDailyReads(dailyLogs) : [];
-    return calcMonthlyTotals(localDaily);
-  }, [dailyLogs, remoteMonthly]);
+  }, [dailyLogs, remoteDaily, selectedMonth, timeFilter]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10, pt: 2 }}>
@@ -236,9 +226,9 @@ export default function AdvancedStatsPage() {
             border: '1px solid rgba(214, 178, 94, 0.25)'
           }}>
             <CardContent>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.sajdahs}</Typography>
-              <StarsIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>TOTAL PARAS</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.totalParas.toFixed(1)}</Typography>
+              <TimelineIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
             </CardContent>
           </Card>
         </Grid>
@@ -266,88 +256,39 @@ export default function AdvancedStatsPage() {
             </Box>
           </Card>
         </Grid>
-      </Grid>
-
-      {/* Monthly Progress Calendar */}
-      <Paper elevation={0} sx={{
-        p: 3,
-        borderRadius: '24px',
-        border: '1px solid',
-        borderColor: 'rgba(214, 178, 94, 0.3)',
-        bgcolor: 'background.paper'
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TimelineIcon /> Reading Consistency
-        </Typography>
-        <Grid container spacing={1} sx={{ justifyContent: 'center' }}>
-          {monthDays.map((day, i) => {
-            const log = getLogForDay(day);
-            const progress = log ? (log.endPara / 30) * 100 : 0;
-            return (
-              <Grid size={1.7} key={i}>
-                <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: 45 }}>
-                  <CircularProgress
-                    variant="determinate"
-                    value={100}
-                    size={40}
-                    thickness={3}
-                    sx={{ color: 'rgba(15, 81, 50, 0.08)', position: 'absolute' }}
-                  />
-                  <CircularProgress
-                    variant="determinate"
-                    value={progress}
-                    size={40}
-                    thickness={3}
-                    sx={{ 
-                      position: 'absolute',
-                      color: progress > 0 ? 'primary.main' : 'transparent'
-                    }}
-                  />
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      fontWeight: isSameDay(day, new Date()) ? 800 : 500,
-                      color: isSameDay(day, new Date()) ? 'primary.main' : 'text.secondary'
-                    }}
-                  >
-                    {format(day, 'd')}
-                  </Typography>
-                  {progress > 0 && (
-                    <Box sx={{ position: 'absolute', bottom: 0, width: 4, height: 4, borderRadius: '50%', bgcolor: 'secondary.main' }} />
-                  )}
-                </Box>
-              </Grid>
-            );
-          })}
+        <Grid size={6}>
+          <Card sx={{
+            color: '#fff',
+            borderRadius: '24px',
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #166534 0%, #0F5132 100%)',
+            border: '1px solid rgba(214, 178, 94, 0.25)'
+          }}>
+            <CardContent>
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.sajdahs}</Typography>
+              <StarsIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+            </CardContent>
+          </Card>
         </Grid>
-      </Paper>
-
-      {/* Monthly Totals */}
-      <Paper elevation={0} sx={{
-        p: 3,
-        borderRadius: '24px',
-        border: '1px solid',
-        borderColor: 'rgba(214, 178, 94, 0.3)',
-        bgcolor: 'background.paper'
-      }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'primary.main' }}>
-          Monthly Totals (Paras Read)
-        </Typography>
-        <Box sx={{ height: 280, width: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyTotals} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-              <Tooltip
-                cursor={{ fill: 'rgba(15, 81, 50, 0.06)' }}
-                contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
-              />
-              <Bar dataKey="parasRead" fill={theme.palette.secondary.main} radius={[8, 8, 0, 0]} barSize={28} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      </Paper>
+        <Grid size={6}>
+          <Card sx={{
+            color: '#fff',
+            borderRadius: '24px',
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundImage: 'linear-gradient(135deg, #0F4C81 0%, #0B3056 100%)',
+            border: '1px solid rgba(214, 178, 94, 0.25)'
+          }}>
+            <CardContent>
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>DAYS LOGGED</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.daysLogged}</Typography>
+              <TimelineIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Interactive Activity Chart */}
       <Paper elevation={0} sx={{
@@ -357,8 +298,23 @@ export default function AdvancedStatsPage() {
         borderColor: 'rgba(214, 178, 94, 0.3)',
         bgcolor: 'background.paper'
       }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2, flexWrap: 'wrap' }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Activity Trends</Typography>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel id="month-select-label">Month</InputLabel>
+            <Select
+              labelId="month-select-label"
+              value={selectedMonth}
+              label="Month"
+              onChange={(event) => setSelectedMonth(event.target.value)}
+            >
+              {availableMonths.map((month) => (
+                <MenuItem key={month} value={month}>
+                  {format(parseISO(`${month}-01`), 'MMM yyyy')}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <ToggleButtonGroup
             value={timeFilter}
             exclusive
@@ -382,34 +338,21 @@ export default function AdvancedStatsPage() {
         </Box>
         <Box sx={{ height: 300, width: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
-            {timeFilter === 'monthly' ? (
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorParas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.35}/>
-                    <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 10 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
-                />
-                <Area type="monotone" dataKey="paras" stroke={theme.palette.secondary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorParas)" />
-              </AreaChart>
-            ) : (
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(15, 81, 50, 0.06)' }} 
-                  contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
-                />
-                <Bar dataKey="paras" fill={theme.palette.primary.main} radius={[8, 8, 0, 0]} barSize={30} />
-              </BarChart>
-            )}
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorParas" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 10 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
+              />
+              <Area type="monotone" dataKey="paras" stroke={theme.palette.secondary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorParas)" />
+            </AreaChart>
           </ResponsiveContainer>
         </Box>
       </Paper>
