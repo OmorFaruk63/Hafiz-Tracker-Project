@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -22,8 +22,10 @@ import {
   Tooltip, 
   ResponsiveContainer, 
   CartesianGrid,
-  AreaChart,
-  Area
+  BarChart,
+  Bar,
+  LineChart,
+  Line
 } from 'recharts';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/hafizDB';
@@ -45,9 +47,8 @@ export default function AdvancedStatsPage() {
   const PAGE_PER_PARA = 20;
   const TOTAL_PARAS = 30;
 
-  const toParaUnits = (para: number, page: number) => para + page / PAGE_PER_PARA;
-
-  const calcDailyReads = (logs: Array<{ date: string; endPara: number; endPage: number }>) => {
+  const calcDailyReads = useCallback((logs: Array<{ date: string; endPara: number; endPage: number }>) => {
+    const toParaUnits = (para: number, page: number) => para + page / PAGE_PER_PARA;
     const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
     let prevUnits: number | null = null;
 
@@ -70,7 +71,7 @@ export default function AdvancedStatsPage() {
         endPage: log.endPage
       };
     });
-  };
+  }, [TOTAL_PARAS]);
 
   useEffect(() => {
     if (!userEmail || typeof window === 'undefined' || !navigator.onLine) return;
@@ -98,13 +99,21 @@ export default function AdvancedStatsPage() {
     ).sort((a, b) => a.localeCompare(b));
 
     return months.length > 0 ? months : [format(new Date(), 'yyyy-MM')];
-  }, [dailyLogs, remoteDaily]);
+  }, [dailyLogs, remoteDaily, calcDailyReads]);
 
   useEffect(() => {
-    if (!availableMonths.includes(selectedMonth)) {
-      setSelectedMonth(availableMonths[availableMonths.length - 1]);
+    // Initialize selectedMonth if it's not in availableMonths  
+    if (availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
+      const lastMonth = availableMonths[availableMonths.length - 1];
+      // Only set if different to avoid infinite loops
+      if (lastMonth && lastMonth !== selectedMonth) {
+        // Use microtask to defer setState and avoid cascading renders
+        Promise.resolve().then(() => setSelectedMonth(lastMonth));
+      }
     }
-  }, [availableMonths, selectedMonth]);
+    // Intentionally omitting selectedMonth from deps to prevent cascading, covered by guard clause
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableMonths]);
 
   // Summary Logic
   const statsSummary = useMemo(() => {
@@ -127,7 +136,7 @@ export default function AdvancedStatsPage() {
       : 0;
 
     return { avg, sajdahs, totalParas, daysLogged: filteredDaily.length };
-  }, [dailyLogs, remoteDaily, selectedMonth]);
+  }, [dailyLogs, remoteDaily, selectedMonth, calcDailyReads]);
 
   // Chart Data
   const chartData = useMemo(() => {
@@ -190,7 +199,50 @@ export default function AdvancedStatsPage() {
         paras: log ? log.parasRead : 0
       };
     });
-  }, [dailyLogs, remoteDaily, selectedMonth, timeFilter]);
+  }, [dailyLogs, remoteDaily, selectedMonth, timeFilter, calcDailyReads]);
+
+  // Cumulative Chart Data
+  const cumulativeChartData = useMemo(() => {
+    const localDaily = dailyLogs ? calcDailyReads(dailyLogs) : [];
+    const dailySource = remoteDaily ?? localDaily;
+
+    if (!dailySource) return [];
+
+    const dailyForMonth = dailySource.filter(log => log.date.startsWith(selectedMonth));
+    let cumulativeParas = 0;
+
+    if (timeFilter === 'monthly') {
+      const monthTotals = new Map<string, number>();
+      for (const log of dailySource) {
+        const month = log.date.slice(0, 7);
+        monthTotals.set(month, (monthTotals.get(month) || 0) + log.parasRead);
+      }
+      let cumulative = 0;
+      return Array.from(monthTotals.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, total]) => {
+          cumulative += total;
+          return {
+            name: format(parseISO(`${month}-01`), 'MMM yy'),
+            cumulative: Number(cumulative.toFixed(2))
+          };
+        });
+    }
+
+    const monthStart = startOfMonth(parseISO(`${selectedMonth}-01`));
+    const monthEnd = endOfMonth(monthStart);
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const dailyByDate = new Map(dailyForMonth.map(log => [log.date, log]));
+
+    return days.map(day => {
+      const log = dailyByDate.get(format(day, 'yyyy-MM-dd'));
+      if (log) cumulativeParas += log.parasRead;
+      return {
+        name: format(day, 'dd'),
+        cumulative: Number(cumulativeParas.toFixed(2))
+      };
+    });
+  }, [dailyLogs, remoteDaily, selectedMonth, timeFilter, calcDailyReads]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10, pt: 2 }}>
@@ -290,72 +342,175 @@ export default function AdvancedStatsPage() {
         </Grid>
       </Grid>
 
-      {/* Interactive Activity Chart */}
-      <Paper elevation={0} sx={{
-        p: 3,
-        borderRadius: '24px',
-        border: '1px solid',
-        borderColor: 'rgba(214, 178, 94, 0.3)',
-        bgcolor: 'background.paper'
-      }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2, flexWrap: 'wrap' }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>Activity Trends</Typography>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="month-select-label">Month</InputLabel>
-            <Select
-              labelId="month-select-label"
-              value={selectedMonth}
-              label="Month"
-              onChange={(event) => setSelectedMonth(event.target.value)}
-            >
-              {availableMonths.map((month) => (
-                <MenuItem key={month} value={month}>
-                  {format(parseISO(`${month}-01`), 'MMM yyyy')}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <ToggleButtonGroup
-            value={timeFilter}
-            exclusive
-            onChange={(e, val) => val && setTimeFilter(val)}
-            size="small"
-            color="primary"
-            sx={{ 
-              '& .MuiToggleButton-root': { 
-                borderRadius: '8px', 
-                px: 2,
-                border: 'none',
-                bgcolor: 'rgba(15, 81, 50, 0.08)',
-                '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', boxShadow: '0 6px 16px rgba(15, 81, 50, 0.2)' }
-              } 
-            }}
-          >
-            <ToggleButton value="daily">Daily</ToggleButton>
-            <ToggleButton value="weekly">Weekly</ToggleButton>
-            <ToggleButton value="monthly">Monthly</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-        <Box sx={{ height: 300, width: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorParas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 10 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-              <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: '1px solid rgba(214, 178, 94, 0.3)', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}
-              />
-              <Area type="monotone" dataKey="paras" stroke={theme.palette.secondary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorParas)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Box>
-      </Paper>
+      {/* Charts Section */}
+      <Grid container spacing={3}>
+        {/* Activity Trends Chart */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper elevation={0} sx={{
+            p: 3,
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: 'rgba(214, 178, 94, 0.3)',
+            bgcolor: 'background.paper',
+            height: '100%'
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2, flexWrap: 'wrap' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>📊 Activity Trends</Typography>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel id="month-select-label">Month</InputLabel>
+                <Select
+                  labelId="month-select-label"
+                  value={selectedMonth}
+                  label="Month"
+                  onChange={(event) => setSelectedMonth(event.target.value)}
+                >
+                  {availableMonths.map((month) => (
+                    <MenuItem key={month} value={month}>
+                      {format(parseISO(`${month}-01`), 'MMM yyyy')}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <ToggleButtonGroup
+                value={timeFilter}
+                exclusive
+                onChange={(e, val) => val && setTimeFilter(val)}
+                size="small"
+                color="primary"
+                sx={{ 
+                  '& .MuiToggleButton-root': { 
+                    borderRadius: '8px', 
+                    px: 2,
+                    border: 'none',
+                    bgcolor: 'rgba(15, 81, 50, 0.08)',
+                    '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', boxShadow: '0 6px 16px rgba(15, 81, 50, 0.2)' }
+                  } 
+                }}
+              >
+                <ToggleButton value="daily">Daily</ToggleButton>
+                <ToggleButton value="weekly">Weekly</ToggleButton>
+                <ToggleButton value="monthly">Monthly</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+            <Box sx={{ height: 350, width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={theme.palette.secondary.main} stopOpacity={1}/>
+                      <stop offset="100%" stopColor={theme.palette.secondary.main} stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: theme.palette.text.secondary, fontSize: 11, fontWeight: 500 }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+                    width={30}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: '16px', 
+                      border: 'none',
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
+                      backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#fff',
+                      padding: '12px 16px'
+                    }}
+                    labelStyle={{ color: theme.palette.text.primary, fontWeight: 600 }}
+                    formatter={(value) => {
+                      const numValue = typeof value === 'number' ? value : undefined;
+                      return [numValue ? numValue.toFixed(2) : String(value), 'Paras'];
+                    }}
+                    cursor={{ fill: 'rgba(15, 81, 50, 0.05)' }}
+                  />
+                  <Bar 
+                    dataKey="paras" 
+                    fill="url(#barGradient)" 
+                    radius={[12, 12, 0, 0]}
+                    isAnimationActive={true}
+                    animationDuration={800}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Cumulative Progress Chart */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper elevation={0} sx={{
+            p: 3,
+            borderRadius: '24px',
+            border: '1px solid',
+            borderColor: 'rgba(15, 81, 50, 0.3)',
+            bgcolor: 'background.paper',
+            height: '100%'
+          }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>📈 Cumulative Progress</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                Total Paras Read Over Time
+              </Typography>
+            </Box>
+            <Box sx={{ height: 350, width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={cumulativeChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={0.2}/>
+                      <stop offset="100%" stopColor={theme.palette.primary.main} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: theme.palette.text.secondary, fontSize: 11, fontWeight: 500 }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+                    width={30}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: '16px', 
+                      border: 'none',
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
+                      backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#fff',
+                      padding: '12px 16px'
+                    }}
+                    labelStyle={{ color: theme.palette.text.primary, fontWeight: 600 }}
+                    formatter={(value) => {
+                      const numValue = typeof value === 'number' ? value : undefined;
+                      return [numValue ? numValue.toFixed(2) : String(value), 'Total Paras'];
+                    }}
+                    cursor={{ fill: 'rgba(15, 81, 50, 0.05)' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="cumulative" 
+                    stroke={theme.palette.primary.main} 
+                    strokeWidth={3}
+                    dot={{ fill: theme.palette.primary.main, r: 4 }}
+                    activeDot={{ r: 6, fill: theme.palette.primary.main }}
+                    isAnimationActive={true}
+                    animationDuration={800}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   );
 }
