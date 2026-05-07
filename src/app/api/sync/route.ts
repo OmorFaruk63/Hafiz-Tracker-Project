@@ -2,10 +2,23 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongoose';
 import { DailyLogModel } from '@/models/DailyLog';
 
+type SyncLog = {
+  date: string;
+  endPara: number;
+  endPage: number;
+  sajdahsDone?: number;
+  loggedAt?: string;
+};
+
+type SyncRequestBody = {
+  email?: string;
+  logs?: SyncLog[];
+};
+
 // SYNC DATA TO CLOUD
 export async function POST(req: Request) {
   try {
-    const { email, logs } = await req.json();
+    const { email, logs } = (await req.json()) as SyncRequestBody;
     
     if (!email) {
       return NextResponse.json({ error: 'User email is required' }, { status: 400 });
@@ -17,7 +30,7 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    const ops = logs.map((log: any) => ({
+    const ops = logs.map((log) => ({
       updateOne: {
         filter: { userEmail: email, date: log.date },
         update: {

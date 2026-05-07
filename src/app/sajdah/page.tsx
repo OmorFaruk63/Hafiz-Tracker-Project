@@ -15,7 +15,8 @@ import {
   Paper,
   Divider,
   Snackbar,
-  Alert
+  Alert,
+  useTheme
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -90,7 +91,7 @@ export default function SajdahPaymentPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', mt: 2, fontFamily: 'var(--font-amiri)', letterSpacing: 0.4 }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', mt: 2, fontFamily: 'var(--font-dm-sans)', letterSpacing: 0.4 }}>
         Sajdah Ledger
       </Typography>
 

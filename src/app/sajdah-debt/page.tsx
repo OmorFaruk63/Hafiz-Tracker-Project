@@ -86,7 +86,7 @@ export default function SajdahLedgerPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2, pb: 4 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', fontFamily: 'var(--font-amiri)', letterSpacing: 0.4, textAlign: 'center' }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', fontFamily: 'var(--font-dm-sans)', letterSpacing: 0.4, textAlign: 'center' }}>
         Sajdah Ledger
       </Typography>
 

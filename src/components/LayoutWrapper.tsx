@@ -12,6 +12,7 @@ import {
   ListItemText,
   useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import HomeIcon from '@mui/icons-material/Home';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
@@ -63,9 +64,12 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
                 mb: 1,
                 borderRadius: 2,
                 '&.Mui-selected': {
-                  bgcolor: 'primary.lighter',
+                    bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'light' ? 0.08 : 0.18),
                   color: 'primary.main',
                   '& .MuiListItemIcon-root': { color: 'primary.main' },
+                },
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'light' ? 0.04 : 0.12),
                 },
               }}
             >
@@ -86,7 +90,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             <Typography
               variant="h6"
               component="div"
-              sx={{ flexGrow: 1, fontWeight: 600, color: 'text.primary' }}
+              sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}
             >
               {navItems.find((item) => item.path === pathname)?.label || 'Hafiz Tracker'}
             </Typography>

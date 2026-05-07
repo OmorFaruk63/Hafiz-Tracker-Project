@@ -2,7 +2,9 @@ html,
 body {
   padding: 0;
   margin: 0;
-  /* MUI handles typography and colors, so no need for base styles here */
+  font-family: var(--font-dm-sans), sans-serif;
+  background: #f9fafb;
+  color: #1c252e;
 }
 
 a {

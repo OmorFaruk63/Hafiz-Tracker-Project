@@ -246,97 +246,56 @@ export default function AdvancedStatsPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 10, pt: 2 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', textAlign: 'center', fontFamily: 'var(--font-amiri)', letterSpacing: 0.5 }}>
-        Strength Analysis
+      <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', textAlign: 'center' }}>
+        Statistics
       </Typography>
 
       {/* Summary Tiles */}
       <Grid container spacing={2}>
         <Grid size={6}>
-          <Card sx={{
-            color: '#fff',
-            borderRadius: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundImage: 'linear-gradient(135deg, #0F5132 0%, #1F7A55 60%, #0F5132 100%)',
-            border: '1px solid rgba(214, 178, 94, 0.35)'
-          }}>
+          <Card sx={{ borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <CardContent>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>AVG PARAS / DAY</Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.avg}</Typography>
-              <TrendingUpIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>AVG PARAS / DAY</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>{statsSummary.avg}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid size={6}>
-          <Card sx={{
-            color: '#fff',
-            borderRadius: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundImage: 'linear-gradient(135deg, #1F9D7A 0%, #0F5132 100%)',
-            border: '1px solid rgba(214, 178, 94, 0.25)'
-          }}>
+          <Card sx={{ borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <CardContent>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>TOTAL PARAS</Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.totalParas.toFixed(1)}</Typography>
-              <TimelineIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>TOTAL PARAS</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>{statsSummary.totalParas.toFixed(1)}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid size={12}>
-          <Card sx={{
-            color: '#1B1407',
-            borderRadius: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            p: 1,
-            backgroundImage: 'linear-gradient(135deg, #F0D38B 0%, #D6B25E 55%, #B28A3E 100%)',
-            border: '1px solid rgba(15, 81, 50, 0.2)'
-          }}>
+          <Card sx={{ borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
-              <AutoStoriesIcon fontSize="large" />
+              <AutoStoriesIcon fontSize="large" color="primary" />
               <Box>
-                <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>TOTAL KHATAMS</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 800 }}>{totalKhatams}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>TOTAL KHATAMS</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>{totalKhatams}</Typography>
               </Box>
             </Box>
             <Box sx={{ p: 2, textAlign: 'right' }}>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>CURRENT PARA</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800 }}>{lastPara}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>CURRENT PARA</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>{lastPara}</Typography>
             </Box>
           </Card>
         </Grid>
         <Grid size={6}>
-          <Card sx={{
-            color: '#fff',
-            borderRadius: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundImage: 'linear-gradient(135deg, #166534 0%, #0F5132 100%)',
-            border: '1px solid rgba(214, 178, 94, 0.25)'
-          }}>
+          <Card sx={{ borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <CardContent>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.sajdahs}</Typography>
-              <StarsIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>MONTHLY SAJDAHS</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>{statsSummary.sajdahs}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid size={6}>
-          <Card sx={{
-            color: '#fff',
-            borderRadius: '24px',
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundImage: 'linear-gradient(135deg, #0F4C81 0%, #0B3056 100%)',
-            border: '1px solid rgba(214, 178, 94, 0.25)'
-          }}>
+          <Card sx={{ borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <CardContent>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600 }}>DAYS LOGGED</Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>{statsSummary.daysLogged}</Typography>
-              <TimelineIcon sx={{ position: 'absolute', right: -10, bottom: -10, fontSize: 80, opacity: 0.1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>DAYS LOGGED</Typography>
+              <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>{statsSummary.daysLogged}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -346,14 +305,7 @@ export default function AdvancedStatsPage() {
       <Grid container spacing={3}>
         {/* Activity Trends Chart */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Paper elevation={0} sx={{
-            p: 3,
-            borderRadius: '24px',
-            border: '1px solid',
-            borderColor: 'rgba(214, 178, 94, 0.3)',
-            bgcolor: 'background.paper',
-            height: '100%'
-          }}>
+<Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>📊 Activity Trends</Typography>
               <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -379,11 +331,11 @@ export default function AdvancedStatsPage() {
                 color="primary"
                 sx={{ 
                   '& .MuiToggleButton-root': { 
-                    borderRadius: '8px', 
+                    borderRadius: 1, 
                     px: 2,
                     border: 'none',
-                    bgcolor: 'rgba(15, 81, 50, 0.08)',
-                    '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff', boxShadow: '0 6px 16px rgba(15, 81, 50, 0.2)' }
+                    bgcolor: 'action.hover',
+                    '&.Mui-selected': { bgcolor: 'primary.main', color: '#fff' }
                   } 
                 }}
               >
@@ -401,7 +353,7 @@ export default function AdvancedStatsPage() {
                       <stop offset="100%" stopColor={theme.palette.secondary.main} stopOpacity={0.6}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(145, 158, 171, 0.12)" />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 
@@ -414,20 +366,20 @@ export default function AdvancedStatsPage() {
                     tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                     width={30}
                   />
-                  <Tooltip 
+<Tooltip 
                     contentStyle={{ 
-                      borderRadius: '16px', 
+                      borderRadius: 2, 
                       border: 'none',
-                      boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
                       backgroundColor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#fff',
-                      padding: '12px 16px'
+                      padding: '8px 12px'
                     }}
                     labelStyle={{ color: theme.palette.text.primary, fontWeight: 600 }}
                     formatter={(value) => {
                       const numValue = typeof value === 'number' ? value : undefined;
                       return [numValue ? numValue.toFixed(2) : String(value), 'Paras'];
                     }}
-                    cursor={{ fill: 'rgba(15, 81, 50, 0.05)' }}
+                    cursor={{ fill: 'rgba(24, 119, 242, 0.08)' }}
                   />
                   <Bar 
                     dataKey="paras" 
@@ -444,14 +396,7 @@ export default function AdvancedStatsPage() {
 
         {/* Cumulative Progress Chart */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Paper elevation={0} sx={{
-            p: 3,
-            borderRadius: '24px',
-            border: '1px solid',
-            borderColor: 'rgba(15, 81, 50, 0.3)',
-            bgcolor: 'background.paper',
-            height: '100%'
-          }}>
+<Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', height: '100%' }}>
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>📈 Cumulative Progress</Typography>
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
@@ -467,7 +412,7 @@ export default function AdvancedStatsPage() {
                       <stop offset="100%" stopColor={theme.palette.primary.main} stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(15, 81, 50, 0.08)" />
+                  <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(145, 158, 171, 0.12)" />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 

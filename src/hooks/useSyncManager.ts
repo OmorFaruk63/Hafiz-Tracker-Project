@@ -57,14 +57,20 @@ export function useSyncManager() {
 
   // Initial and Periodic Sync
   useEffect(() => {
-    syncNow();
+    const initialSyncTimer = window.setTimeout(() => {
+      void syncNow();
+    }, 0);
+
     window.addEventListener('online', syncNow);
     
     // Auto sync every 5 minutes if online
-    const interval = setInterval(syncNow, 5 * 60 * 1000);
+    const interval = window.setInterval(() => {
+      void syncNow();
+    }, 5 * 60 * 1000);
     
     return () => {
       window.removeEventListener('online', syncNow);
+      window.clearTimeout(initialSyncTimer);
       clearInterval(interval);
     };
   }, [syncNow, userEmail]);

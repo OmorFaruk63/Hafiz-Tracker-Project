@@ -200,7 +200,7 @@ export default function HistoryPage() {
             fontWeight: 800,
             color: 'primary.main',
             textAlign: 'center',
-            fontFamily: 'var(--font-amiri)',
+            fontFamily: 'var(--font-dm-sans)',
             letterSpacing: 0.4
           }}
         >

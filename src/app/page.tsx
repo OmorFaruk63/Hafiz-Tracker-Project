@@ -40,6 +40,13 @@ import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 
+type CloudLog = {
+  date: string;
+  endPara: number;
+  endPage: number;
+  sajdahsDone: number;
+};
+
 // Zod Schema for validation
 const LogSchema = z.object({
   para: z.number().int().min(1).max(30),
@@ -67,22 +74,12 @@ export default function Home() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [khatamToastOpen, setKhatamToastOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
   const [emailInput, setEmailInput] = useState("");
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(() => !userEmail);
   const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    setParaInput(lastPara);
-    setPageInput(lastPage);
-    setIsOnline(navigator.onLine);
-
-    if (mounted && !userEmail) {
-      setEmailDialogOpen(true);
-    }
-
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener("online", handleOnline);
@@ -91,7 +88,7 @@ export default function Home() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [lastPara, lastPage, userEmail, mounted]);
+  }, []);
 
   const handleParaClick = (p: number) => {
     if (p === 30) {
@@ -197,7 +194,7 @@ export default function Home() {
         // Clear local logs and import from cloud
         await db.dailyLogs.clear();
         await db.dailyLogs.bulkAdd(
-          data.logs.map((l: any) => ({
+          (data.logs as CloudLog[]).map((l) => ({
             date: l.date,
             endPara: l.endPara,
             endPage: l.endPage,
@@ -209,6 +206,8 @@ export default function Home() {
         // Update Zustand with latest log
         const latest = data.logs[0];
         setLastReadPosition(latest.endPara, latest.endPage);
+        setParaInput(latest.endPara);
+        setPageInput(latest.endPage);
         setUserEmail(emailInput);
         setEmailDialogOpen(false);
         setSnackbarOpen(true);
@@ -222,8 +221,6 @@ export default function Home() {
       setIsRestoring(false);
     }
   };
-
-  if (!mounted) return null;
 
   return (
     <Box
