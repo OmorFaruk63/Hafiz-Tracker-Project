@@ -2,13 +2,15 @@
 
 import { useSyncManager } from '@/hooks/useSyncManager';
 import {
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  BottomNavigation, 
-  BottomNavigationAction, 
-  Paper,
-  Box
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  useTheme,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
@@ -16,63 +18,85 @@ import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import HistoryIcon from '@mui/icons-material/History';
 import { useRouter, usePathname } from 'next/navigation';
 
+const navItems = [
+  { label: 'Home', icon: <HomeIcon />, path: '/' },
+  { label: 'Sajdah Debt', icon: <PendingActionsIcon />, path: '/sajdah-debt' },
+  { label: 'Stats', icon: <QueryStatsIcon />, path: '/stats' },
+  { label: 'History', icon: <HistoryIcon />, path: '/history' },
+];
+
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  const getValue = () => {
-    if (pathname === '/') return 0;
-    if (pathname === '/sajdah') return 1;
-    if (pathname === '/stats') return 2;
-    if (pathname === '/history') return 3;
-    return 0;
-  };
+  const theme = useTheme();
 
   useSyncManager();
 
   return (
-    <>
-      <Box sx={{ pb: 7, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <AppBar position="static">
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Sidebar */}
+      <Box
+        sx={{
+          width: 260,
+          flexShrink: 0,
+          bgcolor: 'background.paper',
+          borderRight: '1px solid',
+          borderColor: 'divider',
+          display: { xs: 'none', md: 'block' },
+        }}
+      >
+        <Box sx={{ p: 3 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, color: 'primary.main', letterSpacing: 0.5 }}
+          >
+            Hafiz Tracker
+          </Typography>
+        </Box>
+        <List component="nav" sx={{ px: 2 }}>
+          {navItems.map((item) => (
+            <ListItemButton
+              key={item.path}
+              selected={pathname === item.path}
+              onClick={() => router.push(item.path)}
+              sx={{
+                mb: 1,
+                borderRadius: 2,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.lighter',
+                  color: 'primary.main',
+                  '& .MuiListItemIcon-root': { color: 'primary.main' },
+                },
+              }}
+            >
+              <ListItemIcon sx={{ color: pathname === item.path ? 'primary.main' : 'inherit' }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          ))}
+        </List>
+      </Box>
+
+      {/* Main Content */}
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <AppBar position="static" color="default" elevation={0}>
           <Toolbar>
             <Typography
               variant="h6"
               component="div"
-              sx={{
-                flexGrow: 1,
-                fontWeight: 800,
-                letterSpacing: 0.4,
-                fontFamily: 'var(--font-amiri)',
-                color: 'secondary.light'
-              }}
+              sx={{ flexGrow: 1, fontWeight: 600, color: 'text.primary' }}
             >
-              Hafiz Tracker
+              {navItems.find((item) => item.path === pathname)?.label || 'Hafiz Tracker'}
             </Typography>
           </Toolbar>
         </AppBar>
-        
-        <Box component="main" sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+
+        <Box component="main" sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
           {children}
         </Box>
-
-        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
-          <BottomNavigation
-            showLabels
-            value={getValue()}
-            onChange={(event, newValue) => {
-              if (newValue === 0) router.push('/');
-              if (newValue === 1) router.push('/sajdah');
-              if (newValue === 2) router.push('/stats');
-              if (newValue === 3) router.push('/history');
-            }}
-          >
-            <BottomNavigationAction label="Home" icon={<HomeIcon />} />
-            <BottomNavigationAction label="Sajdah Debt" icon={<PendingActionsIcon />} />
-            <BottomNavigationAction label="Stats" icon={<QueryStatsIcon />} />
-            <BottomNavigationAction label="History" icon={<HistoryIcon />} />
-          </BottomNavigation>
-        </Paper>
       </Box>
-    </>
+    </Box>
   );
 }
