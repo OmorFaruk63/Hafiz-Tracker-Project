@@ -14,10 +14,12 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  InputAdornment,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
+  MenuItem,
   Skeleton,
   Snackbar,
   TextField,
@@ -25,6 +27,12 @@ import {
   Typography
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import ClearIcon from '@mui/icons-material/Clear';
+import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
+import SaveIcon from '@mui/icons-material/Save';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/hafizDB';
 import { format, isValid, parseISO } from 'date-fns';
@@ -66,6 +74,8 @@ export default function HistoryPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [dateSearch, setDateSearch] = useState('');
 
   const listItems = useMemo(() => {
     if (!dailyLogs) return null;
@@ -81,6 +91,7 @@ export default function HistoryPage() {
     return Array.from(logsByDate.values()).map((log) => ({
       id: log.id,
       date: log.date,
+      month: log.date.slice(0, 7),
       displayDate: format(parseISO(log.date), 'EEE, MMM d, yyyy'),
       endPara: log.endPara,
       endPage: log.endPage,
@@ -88,6 +99,40 @@ export default function HistoryPage() {
       isSynced: log.isSynced
     }));
   }, [dailyLogs]);
+
+  const monthOptions = useMemo(() => {
+    if (!listItems) return [];
+
+    return Array.from(new Set(listItems.map((log) => log.month)))
+      .sort((a, b) => b.localeCompare(a))
+      .map((month) => ({
+        value: month,
+        label: format(parseISO(`${month}-01`), 'MMMM yyyy')
+      }));
+  }, [listItems]);
+
+  const filteredItems = useMemo(() => {
+    if (!listItems) return null;
+
+    const normalizedSearch = dateSearch.trim().toLowerCase();
+
+    return listItems.filter((log) => {
+      const matchesMonth = monthFilter === 'all' || log.month === monthFilter;
+      const matchesSearch =
+        !normalizedSearch ||
+        log.date.includes(normalizedSearch) ||
+        log.displayDate.toLowerCase().includes(normalizedSearch);
+
+      return matchesMonth && matchesSearch;
+    });
+  }, [dateSearch, listItems, monthFilter]);
+
+  const hasActiveFilters = monthFilter !== 'all' || dateSearch.trim().length > 0;
+
+  const clearFilters = () => {
+    setMonthFilter('all');
+    setDateSearch('');
+  };
 
   const openAddDialog = () => {
     setForm(emptyForm());
@@ -157,14 +202,22 @@ export default function HistoryPage() {
 
       const existingForDate = await db.dailyLogs.where('date').equals(validData.date).first();
 
-      if (existingForDate?.id) {
+      if (existingForDate?.id && existingForDate.id !== form.id) {
+        if (form.id) {
+          setSaveError('A log already exists for this date. Edit that date instead.');
+          return;
+        }
+
         await db.dailyLogs.update(existingForDate.id, {
           ...validData,
           loggedAt: new Date().toISOString(),
           isSynced: false
         });
-      } else if (form.id) {
-        await db.dailyLogs.update(form.id, {
+      } else if (form.id || existingForDate?.id) {
+        const targetId = form.id ?? existingForDate?.id;
+        if (!targetId) return;
+
+        await db.dailyLogs.update(targetId, {
           ...validData,
           loggedAt: new Date().toISOString(),
           isSynced: false
@@ -193,26 +246,37 @@ export default function HistoryPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2, pb: 10 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 800,
-            color: 'primary.main',
-            textAlign: 'center',
-            fontFamily: 'var(--font-dm-sans)',
-            letterSpacing: 0.4
-          }}
-        >
-          Reading History
-        </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          gap: 2,
+          flexDirection: { xs: 'column', sm: 'row' }
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: 'primary.main',
+              fontFamily: 'var(--font-dm-sans)',
+              letterSpacing: 0,
+              fontSize: { xs: '1.7rem', sm: '2.125rem' }
+            }}
+          >
+            Reading History
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+            Find, correct, and sync your previous reading logs.
+          </Typography>
+        </Box>
         <Tooltip title="Add missing day">
           <IconButton
             color="primary"
             onClick={openAddDialog}
             sx={{
-              position: 'absolute',
-              right: 0,
               bgcolor: 'rgba(214, 178, 94, 0.12)',
               border: '1px solid rgba(214, 178, 94, 0.35)'
             }}
@@ -222,31 +286,159 @@ export default function HistoryPage() {
         </Tooltip>
       </Box>
 
-      <Card sx={{ borderRadius: '24px', border: '1px solid rgba(214, 178, 94, 0.25)' }}>
-        <CardContent>
-          {listItems === null ? (
+      <Card sx={{ borderRadius: 2, border: '1px solid rgba(214, 178, 94, 0.25)' }}>
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'minmax(180px, 0.45fr) 1fr auto' },
+              gap: 1.5,
+              alignItems: 'center'
+            }}
+          >
+            <TextField
+              select
+              label="Month"
+              size="small"
+              value={monthFilter}
+              onChange={(event) => setMonthFilter(event.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarMonthIcon fontSize="small" />
+                    </InputAdornment>
+                  )
+                }
+              }}
+            >
+              <MenuItem value="all">All months</MenuItem>
+              {monthOptions.map((month) => (
+                <MenuItem key={month.value} value={month.value}>
+                  {month.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Search date"
+              size="small"
+              placeholder="YYYY-MM-DD or month name"
+              value={dateSearch}
+              onChange={(event) => setDateSearch(event.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  )
+                }
+              }}
+            />
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<ClearIcon />}
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+              sx={{ minHeight: 40, whiteSpace: 'nowrap' }}
+            >
+              Clear
+            </Button>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
+              gap: 1.5
+            }}
+          >
+            {[
+              { label: 'Showing', value: filteredItems?.length ?? 0 },
+              { label: 'Total logs', value: listItems?.length ?? 0 },
+              { label: 'Unsynced', value: listItems?.filter((log) => !log.isSynced).length ?? 0 },
+              { label: 'Months', value: monthOptions.length }
+            ].map((item) => (
+              <Box
+                key={item.label}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: 'background.default',
+                  border: '1px solid',
+                  borderColor: 'divider'
+                }}
+              >
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800 }}>
+                  {item.label}
+                </Typography>
+                <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 900 }}>
+                  {item.value}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+
+          {filteredItems === null ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Skeleton variant="rounded" height={54} />
               <Skeleton variant="rounded" height={54} />
               <Skeleton variant="rounded" height={54} />
             </Box>
-          ) : !listItems.length ? (
-            <Typography variant="body2" color="text.secondary">
-              No history yet.
-            </Typography>
+          ) : !filteredItems.length ? (
+            <Box
+              sx={{
+                py: 4,
+                textAlign: 'center',
+                borderRadius: 2,
+                bgcolor: 'background.default',
+                border: '1px dashed',
+                borderColor: 'divider'
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                {hasActiveFilters ? 'No matching logs' : 'No history yet'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {hasActiveFilters ? 'Try another month or date search.' : "Add a missing day or save today's progress."}
+              </Typography>
+            </Box>
           ) : (
             <List disablePadding>
-              {listItems.map((log, index) => (
+              {filteredItems.map((log, index) => (
                 <React.Fragment key={log.id ?? log.date}>
                   {index > 0 && <Divider component="li" />}
                   <ListItem disablePadding>
                     <ListItemButton
                       onClick={() => openEditDialog(log)}
-                      sx={{ px: 0, py: 1.5, display: 'flex', alignItems: 'center', gap: 2 }}
+                      sx={{
+                        px: { xs: 0, sm: 1 },
+                        py: 1.5,
+                        display: 'flex',
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        gap: 2,
+                        borderRadius: 2
+                      }}
                     >
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: 'rgba(15, 81, 50, 0.1)',
+                          color: 'primary.main',
+                          flex: '0 0 auto'
+                        }}
+                      >
+                        <AutoStoriesIcon fontSize="small" />
+                      </Box>
                       <ListItemText
                         primary={log.displayDate}
-                        secondary={`Para ${log.endPara} · Page ${log.endPage}`}
+                        secondary={`Para ${log.endPara} · Page ${log.endPage} · ${log.date}`}
                         slotProps={{ primary: { sx: { fontWeight: 700 } } }}
                       />
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.75 }}>
@@ -266,6 +458,13 @@ export default function HistoryPage() {
                             sx={{ fontWeight: 700 }}
                           />
                         )}
+                        <Chip
+                          icon={<EditIcon />}
+                          label="Edit"
+                          variant="outlined"
+                          size="small"
+                          sx={{ fontWeight: 700 }}
+                        />
                       </Box>
                     </ListItemButton>
                   </ListItem>
@@ -276,61 +475,126 @@ export default function HistoryPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontWeight: 800 }}>Quick Correction</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>
+          {form.id ? 'Edit Reading Log' : 'Add Missing Day'}
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mt: 0.5 }}>
+            Update the saved end position for this date. Changes stay offline first and sync afterward.
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
           {saveError && (
             <Alert severity="error" onClose={() => setSaveError(null)}>
               {saveError}
             </Alert>
           )}
-          <TextField
-            label="Date"
-            type="date"
-            value={form.date}
-            onChange={(event) => updateForm('date', event.target.value)}
-            error={Boolean(errors.date)}
-            helperText={errors.date}
-            fullWidth
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <TextField
-            label="Para"
-            type="number"
-            value={form.endPara}
-            onChange={(event) => updateForm('endPara', event.target.value)}
-            error={Boolean(errors.endPara)}
-            helperText={errors.endPara}
-            fullWidth
-            slotProps={{ htmlInput: { min: 1, max: 30, step: 1 } }}
-          />
-          <TextField
-            label="Page"
-            type="number"
-            value={form.endPage}
-            onChange={(event) => updateForm('endPage', event.target.value)}
-            error={Boolean(errors.endPage)}
-            helperText={errors.endPage}
-            fullWidth
-            slotProps={{ htmlInput: { min: 0, max: 20, step: 1 } }}
-          />
-          <TextField
-            label="Sajdah count"
-            type="number"
-            value={form.sajdahsDone}
-            onChange={(event) => updateForm('sajdahsDone', event.target.value)}
-            error={Boolean(errors.sajdahsDone)}
-            helperText={errors.sajdahsDone}
-            fullWidth
-            slotProps={{ htmlInput: { min: 0, step: 1 } }}
-          />
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'background.default',
+              borderColor: 'divider'
+            }}
+          >
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                Log Date
+              </Typography>
+              <TextField
+                label="Date"
+                type="date"
+                value={form.date}
+                onChange={(event) => updateForm('date', event.target.value)}
+                error={Boolean(errors.date)}
+                helperText={errors.date || 'Pick the day this reading belongs to.'}
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'background.default',
+              borderColor: 'divider'
+            }}
+          >
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                Reading Position
+              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  gap: 1.5
+                }}
+              >
+                <TextField
+                  label="Para"
+                  type="number"
+                  value={form.endPara}
+                  onChange={(event) => updateForm('endPara', event.target.value)}
+                  error={Boolean(errors.endPara)}
+                  helperText={errors.endPara || '1 to 30'}
+                  fullWidth
+                  slotProps={{ htmlInput: { min: 1, max: 30, step: 1 } }}
+                />
+                <TextField
+                  label="Page"
+                  type="number"
+                  value={form.endPage}
+                  onChange={(event) => updateForm('endPage', event.target.value)}
+                  error={Boolean(errors.endPage)}
+                  helperText={errors.endPage || '0 to 20'}
+                  fullWidth
+                  slotProps={{ htmlInput: { min: 0, max: 20, step: 1 } }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              bgcolor: 'background.default',
+              borderColor: 'divider'
+            }}
+          >
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                Sajdah Completed
+              </Typography>
+              <TextField
+                label="Sajdah count"
+                type="number"
+                value={form.sajdahsDone}
+                onChange={(event) => updateForm('sajdahsDone', event.target.value)}
+                error={Boolean(errors.sajdahsDone)}
+                helperText={errors.sajdahsDone || 'Use 0 if no sajdah was completed that day.'}
+                fullWidth
+                slotProps={{ htmlInput: { min: 0, step: 1 } }}
+              />
+            </CardContent>
+          </Card>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 3,
+            flexDirection: { xs: 'column-reverse', sm: 'row' },
+            alignItems: 'stretch',
+            gap: 1
+          }}
+        >
           <Button onClick={() => setDialogOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained">
-            Save
+          <Button onClick={handleSave} variant="contained" startIcon={<SaveIcon />}>
+            {form.id ? 'Save Changes' : 'Add Log'}
           </Button>
         </DialogActions>
       </Dialog>

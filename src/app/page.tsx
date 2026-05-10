@@ -254,6 +254,37 @@ export default function Home() {
     };
   }, [isOnline, isSyncing, lastSyncTime, unsyncedCount]);
 
+  const quranProgress = useMemo(() => {
+    const completedPages = toReadingPages(lastPara, lastPage);
+    const progressPercent = Math.min(100, Math.round((completedPages / TOTAL_READING_PAGES) * 100));
+
+    const paras = Array.from({ length: 30 }, (_, index) => {
+      const para = index + 1;
+      const status =
+        para < lastPara || (para === lastPara && lastPage === PAGES_PER_PARA)
+          ? "completed"
+          : para === lastPara
+            ? "current"
+            : "not-started";
+
+      const pagesRead = para < lastPara ? PAGES_PER_PARA : para === lastPara ? lastPage : 0;
+
+      return {
+        para,
+        status,
+        pagesRead,
+        percent: Math.round((pagesRead / PAGES_PER_PARA) * 100),
+      };
+    });
+
+    return {
+      completedPages,
+      progressPercent,
+      completedParas: paras.filter((para) => para.status === "completed").length,
+      paras,
+    };
+  }, [lastPage, lastPara]);
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -697,6 +728,202 @@ export default function Home() {
             </Grid>
           ))}
         </Grid>
+
+        <Card
+          sx={{
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            overflow: "hidden",
+          }}
+        >
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: { xs: "flex-start", sm: "center" },
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+                mb: 2.5,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "primary.main",
+                    bgcolor: "rgba(15,81,50,0.12)",
+                  }}
+                >
+                  <AutoStoriesIcon />
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: "text.primary" }}>
+                    Quran Progress Map
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Current khatam: Para {lastPara}, Page {lastPage}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ minWidth: { xs: "100%", sm: 220 } }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
+                  <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 800 }}>
+                    {quranProgress.completedPages} / {TOTAL_READING_PAGES} pages
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 900 }}>
+                    {quranProgress.progressPercent}%
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={quranProgress.progressPercent}
+                  sx={{
+                    height: 10,
+                    borderRadius: 999,
+                    bgcolor: "rgba(15,81,50,0.08)",
+                    "& .MuiLinearProgress-bar": {
+                      borderRadius: 999,
+                      backgroundColor: "secondary.main",
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "repeat(5, minmax(0, 1fr))",
+                  sm: "repeat(10, minmax(0, 1fr))",
+                },
+                gap: { xs: 0.75, sm: 1 },
+              }}
+            >
+              {quranProgress.paras.map((para) => {
+                const isCompleted = para.status === "completed";
+                const isCurrent = para.status === "current";
+                const label =
+                  para.status === "completed"
+                    ? `Para ${para.para} completed`
+                    : para.status === "current"
+                      ? `Para ${para.para}: ${para.pagesRead}/${PAGES_PER_PARA} pages`
+                      : `Para ${para.para} not started`;
+
+                return (
+                  <Tooltip key={para.para} title={label}>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        aspectRatio: "1",
+                        minWidth: 0,
+                        overflow: "hidden",
+                        borderRadius: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px solid",
+                        borderColor: isCompleted
+                          ? "primary.main"
+                          : isCurrent
+                            ? "secondary.main"
+                            : "divider",
+                        bgcolor: isCompleted
+                          ? "primary.main"
+                          : isCurrent
+                            ? "rgba(214,178,94,0.16)"
+                            : "background.default",
+                        color: isCompleted
+                          ? "primary.contrastText"
+                          : isCurrent
+                            ? "secondary.dark"
+                            : "text.secondary",
+                        boxShadow: isCurrent ? "0 8px 22px rgba(214,178,94,0.24)" : "none",
+                        transition: "transform 160ms ease, box-shadow 160ms ease",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          position: "relative",
+                          zIndex: 1,
+                          fontWeight: 900,
+                          fontSize: { xs: "0.82rem", sm: "0.92rem" },
+                        }}
+                      >
+                        {para.para}
+                      </Typography>
+                      {isCurrent && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: `${Math.max(8, para.percent)}%`,
+                            bgcolor: "rgba(214,178,94,0.38)",
+                          }}
+                        />
+                      )}
+                      {isCompleted && (
+                        <TaskAltIcon
+                          sx={{
+                            position: "absolute",
+                            right: 4,
+                            bottom: 4,
+                            fontSize: { xs: 12, sm: 15 },
+                            opacity: 0.72,
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </Tooltip>
+                );
+              })}
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1.5,
+                mt: 2,
+              }}
+            >
+              {[
+                { label: `${quranProgress.completedParas} completed`, color: "primary.main" },
+                { label: "Current", color: "secondary.main" },
+                { label: "Not started", color: "divider" },
+              ].map((item) => (
+                <Box key={item.label} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      bgcolor: item.color,
+                      border: item.color === "divider" ? "1px solid" : "none",
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
+                    {item.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Card>
 
         <Card
           sx={{
