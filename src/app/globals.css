@@ -16,6 +16,176 @@ a {
   box-sizing: border-box;
 }
 
+.islamic-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(214, 178, 94, 0.16), transparent 28%),
+    radial-gradient(circle at 92% 8%, rgba(12, 68, 174, 0.08), transparent 24%),
+    linear-gradient(135deg, rgba(15, 81, 50, 0.04), transparent 42%);
+  z-index: 0;
+}
+
+.islamic-ambient {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.islamic-ambient--moon {
+  width: 170px;
+  height: 170px;
+  top: 72px;
+  right: clamp(-90px, -4vw, -34px);
+  border-radius: 50%;
+  border: 1px solid rgba(214, 178, 94, 0.18);
+  box-shadow: inset 34px -22px 0 rgba(214, 178, 94, 0.08);
+  animation: moonDrift 12s ease-in-out infinite;
+}
+
+.islamic-ambient--pattern {
+  width: 280px;
+  height: 280px;
+  left: clamp(-170px, -8vw, -72px);
+  bottom: 40px;
+  opacity: 0.16;
+  background:
+    linear-gradient(45deg, transparent 46%, rgba(15, 81, 50, 0.4) 47%, rgba(15, 81, 50, 0.4) 53%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, rgba(214, 178, 94, 0.45) 47%, rgba(214, 178, 94, 0.45) 53%, transparent 54%);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle, #000 0 58%, transparent 72%);
+  animation: patternBreathe 10s ease-in-out infinite;
+}
+
+.mosque-mark {
+  position: relative;
+  display: block;
+  color: #0F5132;
+  filter: drop-shadow(0 8px 18px rgba(15, 81, 50, 0.14));
+}
+
+.mosque-mark__moon {
+  position: absolute;
+  top: -3px;
+  right: 2px;
+  z-index: 4;
+  display: flex;
+  color: #D6B25E;
+  animation: moonGlow 4s ease-in-out infinite;
+}
+
+.mosque-mark__dome {
+  position: absolute;
+  left: 50%;
+  top: 13%;
+  width: 45%;
+  height: 46%;
+  transform: translateX(-50%);
+  border-radius: 50% 50% 8px 8px;
+  background: linear-gradient(145deg, #1F7A55, #0F5132);
+}
+
+.mosque-mark__body {
+  position: absolute;
+  left: 19%;
+  right: 19%;
+  bottom: 12%;
+  height: 37%;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #0F5132, #0A3B26);
+}
+
+.mosque-mark__body::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 30%;
+  height: 58%;
+  transform: translateX(-50%);
+  border-radius: 12px 12px 0 0;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.mosque-mark__minaret {
+  position: absolute;
+  bottom: 12%;
+  width: 12%;
+  height: 58%;
+  border-radius: 9px 9px 5px 5px;
+  background: linear-gradient(145deg, #D6B25E, #B68A28);
+}
+
+.mosque-mark__minaret::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  width: 11px;
+  height: 11px;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 3px 9px 3px 9px;
+  background: #D6B25E;
+}
+
+.mosque-mark__minaret--left {
+  left: 8%;
+}
+
+.mosque-mark__minaret--right {
+  right: 8%;
+}
+
+@keyframes moonGlow {
+  0%, 100% {
+    opacity: 0.82;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes moonDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-10px, 8px, 0);
+  }
+}
+
+@keyframes patternBreathe {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.13;
+  }
+  50% {
+    transform: scale(1.04) rotate(2deg);
+    opacity: 0.2;
+  }
+}
+
+@keyframes navIconFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .islamic-ambient,
+  .mosque-mark__moon,
+  .MuiSvgIcon-root {
+    animation: none !important;
+  }
+}
+
 /* React Calendar Heatmap custom colors */
 .react-calendar-heatmap .color-empty { fill: rgba(15, 81, 50, 0.06); }
 .react-calendar-heatmap .color-github-1 { fill: rgba(31, 157, 122, 0.28); }
