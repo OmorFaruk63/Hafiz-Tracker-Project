@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Card,
-  CardContent,
   Typography,
   Button,
   IconButton,
@@ -28,16 +27,13 @@ import CloudDoneIcon from "@mui/icons-material/CloudDone";
 import SyncIcon from "@mui/icons-material/Sync";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import StarsIcon from "@mui/icons-material/Stars";
-import NightlightIcon from "@mui/icons-material/Nightlight";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useHafizStore } from "@/store/useHafizStore";
-import { useSajdahDebt } from "@/hooks/useSajdahDebt";
 import { useThemeContext } from "@/components/AppThemeProvider";
 import { useSyncManager } from "@/hooks/useSyncManager";
 import { db } from "@/lib/hafizDB";
 import SaveIcon from "@mui/icons-material/Save";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
-import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 
 type CloudLog = {
@@ -63,10 +59,7 @@ export default function Home() {
     totalKhatams,
     userEmail,
     setUserEmail,
-    setTotalKhatams,
-    setTotalSajdahsDone,
   } = useHafizStore();
-  const { remainingDebt } = useSajdahDebt();
   const { isSyncing, lastSyncTime, syncNow, unsyncedCount } = useSyncManager();
 
   const [paraInput, setParaInput] = useState<number>(1);

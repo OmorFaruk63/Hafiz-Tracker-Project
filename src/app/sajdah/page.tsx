@@ -16,7 +16,6 @@ import {
   Divider,
   Snackbar,
   Alert,
-  useTheme
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -46,7 +45,7 @@ const SAJDAH_LOCATIONS = [
 
 export default function SajdahPaymentPage() {
   const { remainingDebt } = useSajdahDebt();
-  const { totalSajdahsDone, incrementSajdahs, lastPara, lastPage } = useHafizStore();
+  const { incrementSajdahs, lastPara, lastPage } = useHafizStore();
   const { syncNow } = useSyncManager();
   
   const [count, setCount] = useState(1);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -31,9 +31,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/hafizDB';
 import { useHafizStore } from '@/store/useHafizStore';
 import { startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, endOfWeek, format, parseISO } from 'date-fns';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import StarsIcon from '@mui/icons-material/Stars';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 
 export default function AdvancedStatsPage() {
