@@ -20,6 +20,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import BedtimeIcon from '@mui/icons-material/Bedtime';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import FlareIcon from '@mui/icons-material/Flare';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -29,6 +30,7 @@ const navItems = [
   { label: 'Sajdah', mobileLabel: 'Sajdah', icon: <CheckCircleIcon />, path: '/sajdah' },
   { label: 'Stats', mobileLabel: 'Stats', icon: <FlareIcon />, path: '/stats' },
   { label: 'History', mobileLabel: 'History', icon: <HistoryIcon />, path: '/history' },
+  { label: 'Achievements', mobileLabel: 'Badges', icon: <EmojiEventsIcon />, path: '/achievements' },
 ];
 
 function MosqueMark({ compact = false }: { compact?: boolean }) {
@@ -247,7 +249,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
               }),
             },
             '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.62rem',
+              fontSize: '0.58rem',
               lineHeight: 1.2,
               whiteSpace: 'nowrap',
             },
