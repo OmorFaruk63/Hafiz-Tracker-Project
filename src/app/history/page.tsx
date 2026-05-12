@@ -40,12 +40,29 @@ import { format, isValid, parseISO } from 'date-fns';
 import { useSyncManager } from '@/hooks/useSyncManager';
 import { useHafizStore } from '@/store/useHafizStore';
 
+const SAJDAH_POINTS = [
+  { para: 9 },
+  { para: 13 },
+  { para: 14 },
+  { para: 15 },
+  { para: 16 },
+  { para: 17 },
+  { para: 17 },
+  { para: 19 },
+  { para: 19 },
+  { para: 21 },
+  { para: 23 },
+  { para: 24 },
+  { para: 27 },
+  { para: 30 },
+  { para: 30 }
+];
+
 type CorrectionForm = {
   id?: number;
   date: string;
   endPara: string;
   endPage: string;
-  sajdahsDone: string;
   loggedAt?: string;
 };
 
@@ -56,8 +73,7 @@ const todayString = () => format(new Date(), 'yyyy-MM-dd');
 const emptyForm = (): CorrectionForm => ({
   date: todayString(),
   endPara: '1',
-  endPage: '0',
-  sajdahsDone: '0'
+  endPage: '0'
 });
 
 const isValidDateString = (value: string) => {
@@ -78,6 +94,13 @@ export default function HistoryPage() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [monthFilter, setMonthFilter] = useState('all');
   const [dateSearch, setDateSearch] = useState('');
+
+  const autoSajdahsDone = useMemo(() => {
+    const endPara = Number(form.endPara);
+    if (!Number.isFinite(endPara) || endPara < 1) return 0;
+
+    return SAJDAH_POINTS.filter((point) => point.para <= endPara).length;
+  }, [form.endPara]);
 
   const listItems = useMemo(() => {
     if (!dailyLogs) return null;
@@ -142,7 +165,6 @@ export default function HistoryPage() {
       date: log.date,
       endPara: String(log.endPara),
       endPage: String(log.endPage),
-      sajdahsDone: String(log.sajdahsDone),
       loggedAt: log.loggedAt
     });
     setErrors({});
@@ -159,7 +181,6 @@ export default function HistoryPage() {
     const nextErrors: FormErrors = {};
     const endPara = Number(form.endPara);
     const endPage = Number(form.endPage);
-    const sajdahsDone = Number(form.sajdahsDone);
 
     if (!isValidDateString(form.date)) {
       nextErrors.date = 'Use YYYY-MM-DD.';
@@ -173,10 +194,6 @@ export default function HistoryPage() {
       nextErrors.endPage = 'Page must be 0-20.';
     }
 
-    if (!Number.isInteger(sajdahsDone) || sajdahsDone < 0) {
-      nextErrors.sajdahsDone = 'Sajdah count must be 0 or more.';
-    }
-
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) return null;
@@ -184,8 +201,7 @@ export default function HistoryPage() {
     return {
       date: form.date,
       endPara,
-      endPage,
-      sajdahsDone
+      endPage
     };
   };
 
@@ -201,6 +217,7 @@ export default function HistoryPage() {
         ? form.id
         : await db.dailyLogs.add({
             ...validData,
+            sajdahsDone: autoSajdahsDone,
             loggedAt: nextLoggedAt,
             isSynced: false
           });
@@ -208,6 +225,7 @@ export default function HistoryPage() {
       if (form.id) {
         await db.dailyLogs.update(form.id, {
           ...validData,
+          sajdahsDone: autoSajdahsDone,
           loggedAt: nextLoggedAt,
           isSynced: false
         });
@@ -551,18 +569,16 @@ export default function HistoryPage() {
           >
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
-                Sajdah Completed
+                Sajdah Auto Count
               </Typography>
-              <TextField
-                label="Sajdah count"
-                type="number"
-                value={form.sajdahsDone}
-                onChange={(event) => updateForm('sajdahsDone', event.target.value)}
-                error={Boolean(errors.sajdahsDone)}
-                helperText={errors.sajdahsDone || 'Use 0 if no sajdah was completed that day.'}
-                fullWidth
-                slotProps={{ htmlInput: { min: 0, step: 1 } }}
-              />
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                  {autoSajdahsDone}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Calculated from the ending para.
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </DialogContent>
