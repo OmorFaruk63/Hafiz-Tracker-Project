@@ -47,7 +47,8 @@ export const useHafizStore = create<HafizState>()(
       startNewKhatam: () => set((state) => ({ 
         totalKhatams: state.totalKhatams + 1,
         lastPara: 1,
-        lastPage: 0
+        lastPage: 0,
+        totalSajdahsDone: state.totalSajdahsDone + 15,
       })),
     }),
     {

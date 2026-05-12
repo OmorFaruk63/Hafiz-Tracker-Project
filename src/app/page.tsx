@@ -107,6 +107,7 @@ export default function Home() {
 
   const [paraInput, setParaInput] = useState<number>(1);
   const [pageInput, setPageInput] = useState<number>(0);
+  const [showAllParas, setShowAllParas] = useState<boolean>(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [khatamToastOpen, setKhatamToastOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -298,6 +299,13 @@ export default function Home() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  const computeNextSixParas = (last: number) => {
+    const start = last;
+    return Array.from({ length: 6 }, (_, i) => ((start + i) % 30) + 1);
+  };
+
+  const nextSixParas = useMemo(() => computeNextSixParas(lastPara), [lastPara]);
 
   const handleParaClick = (p: number) => {
     if (p === 30) {
@@ -1073,22 +1081,22 @@ export default function Home() {
             color="text.secondary"
             sx={{ mb: 2 }}
           >
-            Select Para (1-30)
+            Choose one of the next 6 paras: {nextSixParas[0]} — {nextSixParas[5]}
           </Typography>
           <Grid container spacing={1}>
-            {Array.from({ length: 30 }, (_, i) => i + 1).map((p) => (
+            {(showAllParas ? Array.from({ length: 30 }, (_, i) => i + 1) : nextSixParas).map((p) => (
               <Grid size={{ xs: 2, sm: 2, md: 1 }} key={p}>
-<Button
+                <Button
                   variant={paraInput === p ? "contained" : "outlined"}
                   color={paraInput === p ? "primary" : "inherit"}
                   onClick={() => handleParaClick(p)}
-                  sx={{ 
-                    minWidth: 0, 
-                    width: '100%', 
-                    aspectRatio: '1', 
+                  sx={{
+                    minWidth: 0,
+                    width: "100%",
+                    aspectRatio: "1",
                     p: 0,
                     fontWeight: 600,
-                    fontSize: '0.85rem',
+                    fontSize: "0.85rem",
                     borderRadius: 1,
                   }}
                 >
@@ -1096,6 +1104,16 @@ export default function Home() {
                 </Button>
               </Grid>
             ))}
+
+            <Grid size={{ xs: 4, sm: 4, md: 2 }}>
+              <Button
+                variant="text"
+                onClick={() => setShowAllParas((s) => !s)}
+                sx={{ mt: 0.5, textTransform: "none", fontWeight: 700 }}
+              >
+                {showAllParas ? "Show next 6" : "Show all paras"}
+              </Button>
+            </Grid>
           </Grid>
 
           <Box sx={{ mt: 4 }}>
