@@ -9,8 +9,18 @@ function toParaUnits(endPara: number, endPage: number) {
   return endPara + endPage / PAGE_PER_PARA;
 }
 
-function calcDailyReads(logs: Array<{ date: string; endPara: number; endPage: number }>) {
-  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+function calcDailyReads(logs: Array<{ date: string; endPara: number; endPage: number; loggedAt?: string }>) {
+  const sorted = [...logs].sort((a, b) => {
+    const dateDelta = a.date.localeCompare(b.date);
+    if (dateDelta !== 0) return dateDelta;
+
+    const leftTime = a.loggedAt ? new Date(a.loggedAt).getTime() : 0;
+    const rightTime = b.loggedAt ? new Date(b.loggedAt).getTime() : 0;
+
+    if (leftTime !== rightTime) return leftTime - rightTime;
+
+    return 0;
+  });
   let prevUnits: number | null = null;
 
   return sorted.map((log) => {
@@ -62,8 +72,8 @@ export async function GET(req: Request) {
     await connectToDatabase();
 
     const logs = await DailyLogModel.find({ userEmail: email })
-      .sort({ date: 1 })
-      .select({ date: 1, endPara: 1, endPage: 1, _id: 0 });
+      .sort({ date: 1, loggedAt: 1, createdAt: 1 })
+      .select({ date: 1, endPara: 1, endPage: 1, loggedAt: 1, _id: 0 });
 
     const daily = calcDailyReads(logs);
     const monthly = calcMonthlyTotals(daily);

@@ -13,6 +13,7 @@ export interface DailyLog {
   parasRead: number;
   pagesRead: number;
   sajdahsDone: number;
+  loggedAt?: string;
   isSynced: boolean;
 }
 

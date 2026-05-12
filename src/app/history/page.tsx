@@ -35,6 +35,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import SaveIcon from '@mui/icons-material/Save';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/hafizDB';
+import { getLatestLogForDate, sortDailyLogsChronologically } from '@/lib/dailyLogs';
 import { format, isValid, parseISO } from 'date-fns';
 import { useSyncManager } from '@/hooks/useSyncManager';
 import { useHafizStore } from '@/store/useHafizStore';
@@ -45,6 +46,7 @@ type CorrectionForm = {
   endPara: string;
   endPage: string;
   sajdahsDone: string;
+  loggedAt?: string;
 };
 
 type FormErrors = Partial<Record<keyof CorrectionForm, string>>;
@@ -80,17 +82,10 @@ export default function HistoryPage() {
   const listItems = useMemo(() => {
     if (!dailyLogs) return null;
 
-    const logsByDate = new Map<string, (typeof dailyLogs)[number]>();
-
-    for (const log of dailyLogs) {
-      if (!logsByDate.has(log.date)) {
-        logsByDate.set(log.date, log);
-      }
-    }
-
-    return Array.from(logsByDate.values()).map((log) => ({
+    return sortDailyLogsChronologically(dailyLogs).map((log) => ({
       id: log.id,
       date: log.date,
+      loggedAt: log.loggedAt,
       month: log.date.slice(0, 7),
       displayDate: format(parseISO(log.date), 'EEE, MMM d, yyyy'),
       endPara: log.endPara,
@@ -147,7 +142,8 @@ export default function HistoryPage() {
       date: log.date,
       endPara: String(log.endPara),
       endPage: String(log.endPage),
-      sajdahsDone: String(log.sajdahsDone)
+      sajdahsDone: String(log.sajdahsDone),
+      loggedAt: log.loggedAt
     });
     setErrors({});
     setSaveError(null);
@@ -200,38 +196,27 @@ export default function HistoryPage() {
     try {
       setSaveError(null);
 
-      const existingForDate = await db.dailyLogs.where('date').equals(validData.date).first();
+      const nextLoggedAt = form.loggedAt ?? new Date().toISOString();
+      const savedId = form.id
+        ? form.id
+        : await db.dailyLogs.add({
+            ...validData,
+            loggedAt: nextLoggedAt,
+            isSynced: false
+          });
 
-      if (existingForDate?.id && existingForDate.id !== form.id) {
-        if (form.id) {
-          setSaveError('A log already exists for this date. Edit that date instead.');
-          return;
-        }
-
-        await db.dailyLogs.update(existingForDate.id, {
+      if (form.id) {
+        await db.dailyLogs.update(form.id, {
           ...validData,
-          loggedAt: new Date().toISOString(),
-          isSynced: false
-        });
-      } else if (form.id || existingForDate?.id) {
-        const targetId = form.id ?? existingForDate?.id;
-        if (!targetId) return;
-
-        await db.dailyLogs.update(targetId, {
-          ...validData,
-          loggedAt: new Date().toISOString(),
-          isSynced: false
-        });
-      } else {
-        await db.dailyLogs.add({
-          ...validData,
-          loggedAt: new Date().toISOString(),
+          loggedAt: nextLoggedAt,
           isSynced: false
         });
       }
 
-      const newestLog = await db.dailyLogs.orderBy('date').reverse().first();
-      if (newestLog?.date === validData.date) {
+      const logsForDate = await db.dailyLogs.where('date').equals(validData.date).toArray();
+      const latestForDate = getLatestLogForDate(logsForDate, validData.date);
+
+      if (latestForDate?.id === savedId) {
         setLastReadPosition(validData.endPara, validData.endPage);
       }
 

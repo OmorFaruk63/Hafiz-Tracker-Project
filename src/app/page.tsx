@@ -45,12 +45,14 @@ import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { z } from "zod";
 import { useLiveQuery } from "dexie-react-hooks";
+import { sortDailyLogsChronologically } from "@/lib/dailyLogs";
 
 type CloudLog = {
   date: string;
   endPara: number;
   endPage: number;
   sajdahsDone: number;
+  loggedAt?: string;
 };
 
 // Zod Schema for validation
@@ -116,8 +118,9 @@ export default function Home() {
   const todayGoal = useMemo(() => {
     const goalPages = dailyGoal.unit === "paras" ? dailyGoal.amount * PAGES_PER_PARA : dailyGoal.amount;
     const today = toDateKey(new Date());
-    const logs = dailyLogs ? [...dailyLogs].sort((a, b) => a.date.localeCompare(b.date)) : [];
-    const todayLog = logs.find((log) => log.date === today);
+    const logs = dailyLogs ? sortDailyLogsChronologically(dailyLogs) : [];
+    const todayLogs = logs.filter((log) => log.date === today);
+    const todayLog = todayLogs[todayLogs.length - 1];
     const previousLog = [...logs].reverse().find((log) => log.date < today);
 
     const progressPages = todayLog ? getReadingDeltaPages(todayLog, previousLog) : 0;
@@ -139,7 +142,7 @@ export default function Home() {
   const monthlyProgress = useMemo(() => {
     const today = toDateKey(new Date());
     const monthKey = today.slice(0, 7);
-    const logs = dailyLogs ? [...dailyLogs].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const logs = dailyLogs ? sortDailyLogsChronologically(dailyLogs) : [];
     const monthPages = logs.reduce((total, log, index) => {
       if (!log.date.startsWith(monthKey)) return total;
       return total + getReadingDeltaPages(log, logs[index - 1]);
@@ -153,7 +156,7 @@ export default function Home() {
   }, [dailyLogs]);
 
   const streakStats = useMemo(() => {
-    const logs = dailyLogs ? [...dailyLogs].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const logs = dailyLogs ? sortDailyLogsChronologically(dailyLogs) : [];
     const activeDates = new Set<string>();
 
     logs.forEach((log, index) => {
@@ -346,24 +349,14 @@ export default function Home() {
       }
 
       const today = new Date().toISOString().split("T")[0];
-      const existing = await db.dailyLogs.where("date").equals(today).first();
-
-      if (existing?.id) {
-        await db.dailyLogs.update(existing.id, {
-          endPara: validData.para,
-          endPage: validData.page,
-          sajdahsDone: existing.sajdahsDone ?? 0,
-          isSynced: false,
-        });
-      } else {
-        await db.dailyLogs.add({
-          date: today,
-          endPara: validData.para,
-          endPage: validData.page,
-          sajdahsDone: 0,
-          isSynced: false,
-        });
-      }
+      await db.dailyLogs.add({
+        date: today,
+        endPara: validData.para,
+        endPage: validData.page,
+        sajdahsDone: 0,
+        loggedAt: new Date().toISOString(),
+        isSynced: false,
+      });
 
       // Trigger sync immediately if online
       syncNow();

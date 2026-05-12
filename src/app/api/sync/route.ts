@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     const ops = logs.map((log) => ({
       updateOne: {
-        filter: { userEmail: email, date: log.date },
+        filter: { userEmail: email, loggedAt: log.loggedAt },
         update: {
           $set: {
             userEmail: email,
@@ -68,7 +68,7 @@ export async function GET(req: Request) {
 
     await connectToDatabase();
     
-    const logs = await DailyLogModel.find({ userEmail: email }).sort({ date: -1 });
+    const logs = await DailyLogModel.find({ userEmail: email }).sort({ date: -1, loggedAt: -1, createdAt: -1 });
 
     return NextResponse.json({ success: true, logs }, { status: 200 });
   } catch (error) {

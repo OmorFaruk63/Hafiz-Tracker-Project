@@ -32,6 +32,7 @@ import { db } from '@/lib/hafizDB';
 import { useHafizStore } from '@/store/useHafizStore';
 import { startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, endOfWeek, format, parseISO } from 'date-fns';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import { sortDailyLogsChronologically } from '@/lib/dailyLogs';
 
 export default function AdvancedStatsPage() {
   const theme = useTheme();
@@ -39,14 +40,14 @@ export default function AdvancedStatsPage() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const dailyLogs = useLiveQuery(() => db.dailyLogs.toArray());
   const { totalKhatams, lastPara, userEmail } = useHafizStore();
-  const [remoteDaily, setRemoteDaily] = useState<Array<{ date: string; parasRead: number; endPara: number; endPage: number }> | null>(null);
+  const [remoteDaily, setRemoteDaily] = useState<Array<{ date: string; parasRead: number; endPara: number; endPage: number; loggedAt?: string }> | null>(null);
 
   const PAGE_PER_PARA = 20;
   const TOTAL_PARAS = 30;
 
   const calcDailyReads = useCallback((logs: Array<{ date: string; endPara: number; endPage: number }>) => {
     const toParaUnits = (para: number, page: number) => para + page / PAGE_PER_PARA;
-    const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = sortDailyLogsChronologically(logs);
     let prevUnits: number | null = null;
 
     return sorted.map((log) => {
@@ -118,13 +119,14 @@ export default function AdvancedStatsPage() {
     const dailySource = remoteDaily ?? localDaily;
 
     const filteredDaily = dailySource.filter(log => log.date.startsWith(selectedMonth));
+    const uniqueDays = new Set(filteredDaily.map((log) => log.date));
 
     if (!dailySource || dailySource.length === 0 || filteredDaily.length === 0) {
       return { avg: 0, sajdahs: 0, totalParas: 0, daysLogged: 0 };
     }
 
     const totalParas = filteredDaily.reduce((acc, log) => acc + log.parasRead, 0);
-    const avg = (totalParas / filteredDaily.length).toFixed(1);
+    const avg = (totalParas / uniqueDays.size).toFixed(1);
 
     const sajdahs = dailyLogs
       ? dailyLogs
@@ -132,7 +134,7 @@ export default function AdvancedStatsPage() {
           .reduce((acc, log) => acc + (log.sajdahsDone || 0), 0)
       : 0;
 
-    return { avg, sajdahs, totalParas, daysLogged: filteredDaily.length };
+    return { avg, sajdahs, totalParas, daysLogged: uniqueDays.size };
   }, [dailyLogs, remoteDaily, selectedMonth, calcDailyReads]);
 
   // Chart Data
@@ -143,13 +145,16 @@ export default function AdvancedStatsPage() {
     if (!dailySource) return [];
 
     const dailyForMonth = dailySource.filter(log => log.date.startsWith(selectedMonth));
-    const dailyByDate = new Map(dailyForMonth.map(log => [log.date, log]));
+    const dailyByDate = new Map<string, number>();
+
+    for (const log of dailyForMonth) {
+      dailyByDate.set(log.date, (dailyByDate.get(log.date) || 0) + log.parasRead);
+    }
 
     const sumForRange = (start: Date, end: Date) => {
       const days = eachDayOfInterval({ start, end });
       return days.reduce((acc, day) => {
-        const log = dailyByDate.get(format(day, 'yyyy-MM-dd'));
-        return acc + (log ? log.parasRead : 0);
+        return acc + (dailyByDate.get(format(day, 'yyyy-MM-dd')) || 0);
       }, 0);
     };
 
@@ -193,7 +198,7 @@ export default function AdvancedStatsPage() {
       const log = dailyByDate.get(format(day, 'yyyy-MM-dd'));
       return {
         name: format(day, 'dd'),
-        paras: log ? log.parasRead : 0
+        paras: log || 0
       };
     });
   }, [dailyLogs, remoteDaily, selectedMonth, timeFilter, calcDailyReads]);
@@ -229,11 +234,15 @@ export default function AdvancedStatsPage() {
     const monthStart = startOfMonth(parseISO(`${selectedMonth}-01`));
     const monthEnd = endOfMonth(monthStart);
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    const dailyByDate = new Map(dailyForMonth.map(log => [log.date, log]));
+    const dailyByDate = new Map<string, number>();
+
+    for (const log of dailyForMonth) {
+      dailyByDate.set(log.date, (dailyByDate.get(log.date) || 0) + log.parasRead);
+    }
 
     return days.map(day => {
       const log = dailyByDate.get(format(day, 'yyyy-MM-dd'));
-      if (log) cumulativeParas += log.parasRead;
+      if (log) cumulativeParas += log;
       return {
         name: format(day, 'dd'),
         cumulative: Number(cumulativeParas.toFixed(2))

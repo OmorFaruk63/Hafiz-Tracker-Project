@@ -28,6 +28,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type DailyLog } from '@/lib/hafizDB';
 import { useHafizStore } from '@/store/useHafizStore';
 import { useSajdahDebt } from '@/hooks/useSajdahDebt';
+import { sortDailyLogsChronologically } from '@/lib/dailyLogs';
 
 const PAGES_PER_PARA = 20;
 const TOTAL_READING_PAGES = 600;
@@ -86,7 +87,7 @@ export default function AchievementsPage() {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   const stats = useMemo(() => {
-    const logs = dailyLogs ?? [];
+    const logs = dailyLogs ? sortDailyLogsChronologically(dailyLogs) : [];
     const activeDates = new Set<string>();
     let goalCompletions = 0;
     let totalPagesReadFromLogs = 0;
