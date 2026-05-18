@@ -1115,6 +1115,32 @@ export default function Home() {
               </Button>
             </Grid>
           </Grid>
+          {process.env.NODE_ENV === 'development' && (
+            <Box sx={{ mt: 2 }}>
+              <Button
+                color="error"
+                variant="outlined"
+                onClick={async () => {
+                  if (!confirm('Reset app data? This will clear local DB and storage.')) return;
+                  try {
+                    // Clear IndexedDB
+                    await db.dailyLogs.clear();
+                    // Clear persisted Zustand storage
+                    localStorage.removeItem('hafiz-storage');
+                    // Clear any other local storage
+                    localStorage.clear();
+                    // Reload app to reflect cleared state
+                    window.location.reload();
+                  } catch (e) {
+                    console.error('Reset failed', e);
+                    setErrorMsg('Reset failed. Check console.');
+                  }
+                }}
+              >
+                Reset app data (dev)
+              </Button>
+            </Box>
+          )}
 
           <Box sx={{ mt: 4 }}>
             <Box
