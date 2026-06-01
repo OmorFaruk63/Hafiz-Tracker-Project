@@ -105,17 +105,19 @@ export default function HistoryPage() {
   const listItems = useMemo(() => {
     if (!dailyLogs) return null;
 
-    return sortDailyLogsChronologically(dailyLogs).map((log) => ({
-      id: log.id,
-      date: log.date,
-      loggedAt: log.loggedAt,
-      month: log.date.slice(0, 7),
-      displayDate: format(parseISO(log.date), 'EEE, MMM d, yyyy'),
-      endPara: log.endPara,
-      endPage: log.endPage,
-      sajdahsDone: log.sajdahsDone ?? 0,
-      isSynced: log.isSynced
-    }));
+    return sortDailyLogsChronologically(dailyLogs)
+      .reverse()
+      .map((log) => ({
+        id: log.id,
+        date: log.date,
+        loggedAt: log.loggedAt,
+        month: log.date.slice(0, 7),
+        displayDate: format(parseISO(log.date), "EEE, MMM d, yyyy"),
+        endPara: log.endPara,
+        endPage: log.endPage,
+        sajdahsDone: log.sajdahsDone ?? 0,
+        isSynced: log.isSynced,
+      }));
   }, [dailyLogs]);
 
   const monthOptions = useMemo(() => {
