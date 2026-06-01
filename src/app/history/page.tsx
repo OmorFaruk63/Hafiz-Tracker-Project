@@ -69,6 +69,15 @@ type CorrectionForm = {
 type FormErrors = Partial<Record<keyof CorrectionForm, string>>;
 
 const todayString = () => format(new Date(), 'yyyy-MM-dd');
+const PAGES_PER_PARA = 20;
+const KHATAM_END_PARA = 30;
+const KHATAM_END_PAGE = 20;
+
+const toReadingUnits = (para: number, page: number) =>
+  para * PAGES_PER_PARA + page;
+
+const isKhatamComplete = (para: number, page: number) =>
+  para === KHATAM_END_PARA && page === KHATAM_END_PAGE;
 
 const emptyForm = (): CorrectionForm => ({
   date: todayString(),
@@ -183,6 +192,10 @@ export default function HistoryPage() {
     const nextErrors: FormErrors = {};
     const endPara = Number(form.endPara);
     const endPage = Number(form.endPage);
+    const logsInOrder = dailyLogs
+      ? sortDailyLogsChronologically(dailyLogs)
+      : [];
+    const previousLog = logsInOrder.filter((log) => log.id !== form.id).at(-1);
 
     if (!isValidDateString(form.date)) {
       nextErrors.date = 'Use YYYY-MM-DD.';
@@ -194,6 +207,22 @@ export default function HistoryPage() {
 
     if (!Number.isInteger(endPage) || endPage < 0 || endPage > 20) {
       nextErrors.endPage = 'Page must be 0-20.';
+    }
+
+    if (previousLog) {
+      const currentUnits = toReadingUnits(endPara, endPage);
+      const previousUnits = toReadingUnits(
+        previousLog.endPara,
+        previousLog.endPage,
+      );
+
+      if (
+        currentUnits < previousUnits &&
+        !isKhatamComplete(previousLog.endPara, previousLog.endPage)
+      ) {
+        nextErrors.endPara =
+          "Backward reading is only allowed after Para 30, Page 20.";
+      }
     }
 
     setErrors(nextErrors);
@@ -258,14 +287,16 @@ export default function HistoryPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2, pb: 10 }}>
+    <Box
+      sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 2, pb: 10 }}
+    >
       <Box
         sx={{
-          display: 'flex',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          justifyContent: 'space-between',
+          display: "flex",
+          alignItems: { xs: "flex-start", sm: "center" },
+          justifyContent: "space-between",
           gap: 2,
-          flexDirection: { xs: 'column', sm: 'row' }
+          flexDirection: { xs: "column", sm: "row" },
         }}
       >
         <Box>
@@ -273,15 +304,18 @@ export default function HistoryPage() {
             variant="h4"
             sx={{
               fontWeight: 900,
-              color: 'primary.main',
-              fontFamily: 'var(--font-dm-sans)',
+              color: "primary.main",
+              fontFamily: "var(--font-dm-sans)",
               letterSpacing: 0,
-              fontSize: { xs: '1.7rem', sm: '2.125rem' }
+              fontSize: { xs: "1.7rem", sm: "2.125rem" },
             }}
           >
             Reading History
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", fontWeight: 600 }}
+          >
             Find, correct, and sync your previous reading logs.
           </Typography>
         </Box>
@@ -290,8 +324,8 @@ export default function HistoryPage() {
             color="primary"
             onClick={openAddDialog}
             sx={{
-              bgcolor: 'rgba(214, 178, 94, 0.12)',
-              border: '1px solid rgba(214, 178, 94, 0.35)'
+              bgcolor: "rgba(214, 178, 94, 0.12)",
+              border: "1px solid rgba(214, 178, 94, 0.35)",
             }}
           >
             <AddIcon />
@@ -299,14 +333,21 @@ export default function HistoryPage() {
         </Tooltip>
       </Box>
 
-      <Card sx={{ borderRadius: 2, border: '1px solid rgba(214, 178, 94, 0.25)' }}>
-        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Card
+        sx={{ borderRadius: 2, border: "1px solid rgba(214, 178, 94, 0.25)" }}
+      >
+        <CardContent
+          sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
+        >
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'minmax(180px, 0.45fr) 1fr auto' },
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "minmax(180px, 0.45fr) 1fr auto",
+              },
               gap: 1.5,
-              alignItems: 'center'
+              alignItems: "center",
             }}
           >
             <TextField
@@ -321,8 +362,8 @@ export default function HistoryPage() {
                     <InputAdornment position="start">
                       <CalendarMonthIcon fontSize="small" />
                     </InputAdornment>
-                  )
-                }
+                  ),
+                },
               }}
             >
               <MenuItem value="all">All months</MenuItem>
@@ -344,8 +385,8 @@ export default function HistoryPage() {
                     <InputAdornment position="start">
                       <SearchIcon fontSize="small" />
                     </InputAdornment>
-                  )
-                }
+                  ),
+                },
               }}
             />
             <Button
@@ -354,7 +395,7 @@ export default function HistoryPage() {
               startIcon={<ClearIcon />}
               onClick={clearFilters}
               disabled={!hasActiveFilters}
-              sx={{ minHeight: 40, whiteSpace: 'nowrap' }}
+              sx={{ minHeight: 40, whiteSpace: "nowrap" }}
             >
               Clear
             </Button>
@@ -362,31 +403,40 @@ export default function HistoryPage() {
 
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' },
-              gap: 1.5
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" },
+              gap: 1.5,
             }}
           >
             {[
-              { label: 'Showing', value: filteredItems?.length ?? 0 },
-              { label: 'Total logs', value: listItems?.length ?? 0 },
-              { label: 'Unsynced', value: listItems?.filter((log) => !log.isSynced).length ?? 0 },
-              { label: 'Months', value: monthOptions.length }
+              { label: "Showing", value: filteredItems?.length ?? 0 },
+              { label: "Total logs", value: listItems?.length ?? 0 },
+              {
+                label: "Unsynced",
+                value: listItems?.filter((log) => !log.isSynced).length ?? 0,
+              },
+              { label: "Months", value: monthOptions.length },
             ].map((item) => (
               <Box
                 key={item.label}
                 sx={{
                   p: 1.5,
                   borderRadius: 2,
-                  bgcolor: 'background.default',
-                  border: '1px solid',
-                  borderColor: 'divider'
+                  bgcolor: "background.default",
+                  border: "1px solid",
+                  borderColor: "divider",
                 }}
               >
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.secondary", fontWeight: 800 }}
+                >
                   {item.label}
                 </Typography>
-                <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 900 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ color: "primary.main", fontWeight: 900 }}
+                >
                   {item.value}
                 </Typography>
               </Box>
@@ -394,7 +444,7 @@ export default function HistoryPage() {
           </Box>
 
           {filteredItems === null ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
               <Skeleton variant="rounded" height={54} />
               <Skeleton variant="rounded" height={54} />
               <Skeleton variant="rounded" height={54} />
@@ -403,18 +453,23 @@ export default function HistoryPage() {
             <Box
               sx={{
                 py: 4,
-                textAlign: 'center',
+                textAlign: "center",
                 borderRadius: 2,
-                bgcolor: 'background.default',
-                border: '1px dashed',
-                borderColor: 'divider'
+                bgcolor: "background.default",
+                border: "1px dashed",
+                borderColor: "divider",
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                {hasActiveFilters ? 'No matching logs' : 'No history yet'}
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 800, color: "text.primary" }}
+              >
+                {hasActiveFilters ? "No matching logs" : "No history yet"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {hasActiveFilters ? 'Try another month or date search.' : "Add a missing day or save today's progress."}
+                {hasActiveFilters
+                  ? "Try another month or date search."
+                  : "Add a missing day or save today's progress."}
               </Typography>
             </Box>
           ) : (
@@ -428,23 +483,23 @@ export default function HistoryPage() {
                       sx={{
                         px: { xs: 0, sm: 1 },
                         py: 1.5,
-                        display: 'flex',
-                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        display: "flex",
+                        alignItems: { xs: "flex-start", sm: "center" },
                         gap: 2,
-                        borderRadius: 2
+                        borderRadius: 2,
                       }}
                     >
                       <Box
                         sx={{
                           width: 44,
                           height: 44,
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          bgcolor: 'rgba(15, 81, 50, 0.1)',
-                          color: 'primary.main',
-                          flex: '0 0 auto'
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          bgcolor: "rgba(15, 81, 50, 0.1)",
+                          color: "primary.main",
+                          flex: "0 0 auto",
                         }}
                       >
                         <AutoStoriesIcon fontSize="small" />
@@ -454,11 +509,18 @@ export default function HistoryPage() {
                         secondary={`Para ${log.endPara} · Page ${log.endPage} · ${log.date}`}
                         slotProps={{ primary: { sx: { fontWeight: 700 } } }}
                       />
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.75 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: 0.75,
+                        }}
+                      >
                         <Chip
-                          label={`${log.sajdahsDone} Sajdah${log.sajdahsDone === 1 ? '' : 's'}`}
-                          color={log.sajdahsDone > 0 ? 'secondary' : 'default'}
-                          variant={log.sajdahsDone > 0 ? 'filled' : 'outlined'}
+                          label={`${log.sajdahsDone} Sajdah${log.sajdahsDone === 1 ? "" : "s"}`}
+                          color={log.sajdahsDone > 0 ? "secondary" : "default"}
+                          variant={log.sajdahsDone > 0 ? "filled" : "outlined"}
                           size="small"
                           sx={{ fontWeight: 700 }}
                         />
@@ -488,14 +550,25 @@ export default function HistoryPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>
-          {form.id ? 'Edit Reading Log' : 'Add Missing Day'}
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mt: 0.5 }}>
-            Update the saved end position for this date. Changes stay offline first and sync afterward.
+          {form.id ? "Edit Reading Log" : "Add Missing Day"}
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", fontWeight: 500, mt: 0.5 }}
+          >
+            Update the saved end position for this date. Changes stay offline
+            first and sync afterward.
           </Typography>
         </DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 1 }}>
+        <DialogContent
+          sx={{ display: "flex", flexDirection: "column", gap: 2.25, pt: 1 }}
+        >
           {saveError && (
             <Alert severity="error" onClose={() => setSaveError(null)}>
               {saveError}
@@ -505,21 +578,28 @@ export default function HistoryPage() {
             variant="outlined"
             sx={{
               borderRadius: 2,
-              bgcolor: 'background.default',
-              borderColor: 'divider'
+              bgcolor: "background.default",
+              borderColor: "divider",
             }}
           >
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
+            <CardContent
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 900, color: "primary.main" }}
+              >
                 Log Date
               </Typography>
               <TextField
                 label="Date"
                 type="date"
                 value={form.date}
-                onChange={(event) => updateForm('date', event.target.value)}
+                onChange={(event) => updateForm("date", event.target.value)}
                 error={Boolean(errors.date)}
-                helperText={errors.date || 'Pick the day this reading belongs to.'}
+                helperText={
+                  errors.date || "Pick the day this reading belongs to."
+                }
                 fullWidth
                 slotProps={{ inputLabel: { shrink: true } }}
               />
@@ -530,28 +610,38 @@ export default function HistoryPage() {
             variant="outlined"
             sx={{
               borderRadius: 2,
-              bgcolor: 'background.default',
-              borderColor: 'divider'
+              bgcolor: "background.default",
+              borderColor: "divider",
             }}
           >
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
+            <CardContent
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 900, color: "primary.main" }}
+              >
                 Reading Position
               </Typography>
               <Box
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 1.5
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gap: 1.5,
                 }}
               >
                 <TextField
                   label="Para"
                   type="number"
                   value={form.endPara}
-                  onChange={(event) => updateForm('endPara', event.target.value)}
+                  onChange={(event) =>
+                    updateForm("endPara", event.target.value)
+                  }
                   error={Boolean(errors.endPara)}
-                  helperText={errors.endPara || '1 to 30'}
+                  helperText={
+                    errors.endPara ||
+                    "1 to 30. Backward reads only after Para 30, Page 20."
+                  }
                   fullWidth
                   slotProps={{ htmlInput: { min: 1, max: 30, step: 1 } }}
                 />
@@ -559,9 +649,11 @@ export default function HistoryPage() {
                   label="Page"
                   type="number"
                   value={form.endPage}
-                  onChange={(event) => updateForm('endPage', event.target.value)}
+                  onChange={(event) =>
+                    updateForm("endPage", event.target.value)
+                  }
                   error={Boolean(errors.endPage)}
-                  helperText={errors.endPage || '0 to 20'}
+                  helperText={errors.endPage || "0 to 20"}
                   fullWidth
                   slotProps={{ htmlInput: { min: 0, max: 20, step: 1 } }}
                 />
@@ -573,19 +665,35 @@ export default function HistoryPage() {
             variant="outlined"
             sx={{
               borderRadius: 2,
-              bgcolor: 'background.default',
-              borderColor: 'divider'
+              bgcolor: "background.default",
+              borderColor: "divider",
             }}
           >
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>
+            <CardContent
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 900, color: "primary.main" }}
+              >
                 Sajdah Auto Count
               </Typography>
-              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 900, color: "primary.main" }}
+                >
                   {autoSajdahsDone}
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   Calculated from the ending para.
                 </Typography>
               </Box>
@@ -596,16 +704,20 @@ export default function HistoryPage() {
           sx={{
             px: 3,
             pb: 3,
-            flexDirection: { xs: 'column-reverse', sm: 'row' },
-            alignItems: 'stretch',
-            gap: 1
+            flexDirection: { xs: "column-reverse", sm: "row" },
+            alignItems: "stretch",
+            gap: 1,
           }}
         >
           <Button onClick={() => setDialogOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained" startIcon={<SaveIcon />}>
-            {form.id ? 'Save Changes' : 'Add Log'}
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            startIcon={<SaveIcon />}
+          >
+            {form.id ? "Save Changes" : "Add Log"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -614,9 +726,13 @@ export default function HistoryPage() {
         open={successOpen}
         autoHideDuration={2500}
         onClose={() => setSuccessOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert severity="success" variant="filled" onClose={() => setSuccessOpen(false)}>
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setSuccessOpen(false)}
+        >
           History saved.
         </Alert>
       </Snackbar>
