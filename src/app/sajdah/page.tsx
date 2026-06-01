@@ -27,17 +27,18 @@ import { db } from '@/lib/hafizDB';
 import { useSyncManager } from '@/hooks/useSyncManager';
 
 const SAJDAH_LOCATIONS = [
-  { para: 9, surah: 'Al-Araf' },
-  { para: 13, surah: 'Ar-Raad' },
+  { para: 9, surah: "Al-A'raf" },
+  { para: 13, surah: "Ar-Ra'd" },
   { para: 14, surah: 'An-Nahl' },
-  { para: 15, surah: 'Al-Isra' },
+  { para: 15, surah: "Al-Isra'" },
   { para: 16, surah: 'Maryam' },
-  { para: 17, surah: 'Al-Hajj' },
+  { para: 17, surah: 'Al-Hajj (Ayah 18)' },
+  { para: 17, surah: 'Al-Hajj (Ayah 77)' },
   { para: 19, surah: 'Al-Furqan' },
-  { para: 21, surah: 'An-Naml' },
-  { para: 23, surah: 'As-Sajdah' },
-  { para: 24, surah: 'Saad' },
-  { para: 25, surah: 'Fussilat' },
+  { para: 19, surah: 'An-Naml' },
+  { para: 21, surah: 'As-Sajdah' },
+  { para: 23, surah: 'Sad' },
+  { para: 24, surah: 'Fussilat' },
   { para: 27, surah: 'An-Najm' },
   { para: 30, surah: 'Al-Inshiqaq' },
   { para: 30, surah: 'Al-Alaq' }

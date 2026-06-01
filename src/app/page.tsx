@@ -308,21 +308,6 @@ export default function Home() {
   const nextSixParas = useMemo(() => computeNextSixParas(lastPara), [lastPara]);
 
   const handleParaClick = (p: number) => {
-    if (p === 30) {
-      import("canvas-confetti").then((confetti) => {
-        confetti.default({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#1877F2", "#8E33FF", "#00B8D9"],
-        });
-      });
-      startNewKhatam();
-      setParaInput(1);
-      setPageInput(0);
-      setKhatamToastOpen(true);
-      return;
-    }
     setParaInput(p);
     if (p === lastPara) {
       setPageInput(lastPage);
@@ -413,7 +398,7 @@ export default function Home() {
             date: l.date,
             endPara: l.endPara,
             endPage: l.endPage,
-            sajdahsDone: l.sajdahsDone,
+            sajdahsDone: l.sajdahsDone || 0,
             isSynced: true,
           })),
         );
@@ -424,6 +409,34 @@ export default function Home() {
         setParaInput(latest.endPara);
         setPageInput(latest.endPage);
         setUserEmail(emailInput);
+
+        // Sort chronologically to count wraps and calculate total completed Khatams
+        const sortedLogs = [...data.logs].sort((a, b) => {
+          const dateDelta = a.date.localeCompare(b.date);
+          if (dateDelta !== 0) return dateDelta;
+          const aTime = a.loggedAt ? new Date(a.loggedAt).getTime() : 0;
+          const bTime = b.loggedAt ? new Date(b.loggedAt).getTime() : 0;
+          return aTime - bTime;
+        });
+
+        let khatamsCount = 0;
+        let prevPos = 0;
+        sortedLogs.forEach((log) => {
+          const pos = log.endPara * 20 + log.endPage;
+          if (prevPos > 0 && pos < prevPos) {
+            khatamsCount++;
+          }
+          prevPos = pos;
+        });
+
+        // Sum performed Sajdahs
+        const totalSajdahs = data.logs.reduce((acc: number, log: CloudLog) => acc + (log.sajdahsDone || 0), 0);
+
+        useHafizStore.setState({
+          totalKhatams: khatamsCount,
+          totalSajdahsDone: totalSajdahs,
+        });
+
         setEmailDialogOpen(false);
         setSnackbarOpen(true);
       } else {

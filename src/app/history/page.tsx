@@ -212,12 +212,20 @@ export default function HistoryPage() {
     try {
       setSaveError(null);
 
+      let existingSajdahs = 0;
+      if (form.id) {
+        const existingLog = await db.dailyLogs.get(form.id);
+        if (existingLog) {
+          existingSajdahs = existingLog.sajdahsDone ?? 0;
+        }
+      }
+
       const nextLoggedAt = form.loggedAt ?? new Date().toISOString();
       const savedId = form.id
         ? form.id
         : await db.dailyLogs.add({
             ...validData,
-            sajdahsDone: autoSajdahsDone,
+            sajdahsDone: 0,
             loggedAt: nextLoggedAt,
             isSynced: false
           });
@@ -225,7 +233,7 @@ export default function HistoryPage() {
       if (form.id) {
         await db.dailyLogs.update(form.id, {
           ...validData,
-          sajdahsDone: autoSajdahsDone,
+          sajdahsDone: existingSajdahs,
           loggedAt: nextLoggedAt,
           isSynced: false
         });
